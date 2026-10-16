@@ -1,0 +1,1122 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1b5c86">
+<title>Perito de Metadados</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;600;700&family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: bancada de perícia em uma coluna — arquivos e dados do caso no topo, achados por gravidade, laudo no fim */
+:root{
+  --bg:#eceff3; --papel:#ffffff; --tinta:#16202a; --suave:#566473; --linha:#d3dae2; --campo:#f6f8fa;
+  --acento:#1b5c86; --acento-forte:#134566; --acento-txt:#ffffff;
+  --alto:#a8241c; --alto-bg:#fbe8e6; --medio:#7d5300; --medio-bg:#fff3d2; --ok:#1d6638; --ok-bg:#e3f3e8; --info:#2b5574; --info-bg:#e5edf4;
+  --f-tit:"Source Serif 4", Georgia, "Times New Roman", serif;
+  --f-txt:"Public Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --f-mono:"JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+  --raio:10px;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#10161c; --papel:#182129; --tinta:#e4eaf0; --suave:#9aa9b8; --linha:#2c3a47; --campo:#121a21;
+  --acento:#5aa7da; --acento-forte:#8cc4ea; --acento-txt:#08131c;
+  --alto:#ff8f86; --alto-bg:#3a1a18; --medio:#f2c35b; --medio-bg:#33280f; --ok:#7fd49a; --ok-bg:#15301f; --info:#8fbfe3; --info-bg:#172a3a;
+  color-scheme:dark; } }
+:root[data-theme="dark"]{
+  --bg:#10161c; --papel:#182129; --tinta:#e4eaf0; --suave:#9aa9b8; --linha:#2c3a47; --campo:#121a21;
+  --acento:#5aa7da; --acento-forte:#8cc4ea; --acento-txt:#08131c;
+  --alto:#ff8f86; --alto-bg:#3a1a18; --medio:#f2c35b; --medio-bg:#33280f; --ok:#7fd49a; --ok-bg:#15301f; --info:#8fbfe3; --info-bg:#172a3a;
+  color-scheme:dark; }
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--tinta);font-family:var(--f-txt);font-size:16px;line-height:1.5;margin:0}
+.pagina{max-width:880px;margin:0 auto;padding-inline:16px;padding-block:20px 60px;display:flex;flex-direction:column;gap:18px}
+h1,h2,h3{font-family:var(--f-tit);text-wrap:balance;margin:0;line-height:1.2}
+h1{font-size:1.9rem}
+h2{font-size:1.3rem}
+h3{font-size:1.08rem}
+p{margin:0}
+.topo{display:flex;flex-direction:column;gap:6px}
+.selo{font-family:var(--f-mono);font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--acento)}
+.sub{color:var(--suave);max-width:62ch}
+.bloco{background:var(--papel);border:1px solid var(--linha);border-radius:var(--raio);padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.passo{display:flex;align-items:baseline;gap:10px}
+.passo b{font-family:var(--f-mono);font-size:.8rem;color:var(--acento);border:1px solid var(--acento);border-radius:99px;padding:1px 8px;flex:none}
+.soltar{border:2px dashed var(--linha);border-radius:var(--raio);padding:22px 14px;text-align:center;display:flex;flex-direction:column;gap:10px;align-items:center;background:var(--campo)}
+.soltar.sobre{border-color:var(--acento)}
+.btn{font:inherit;font-weight:600;border-radius:8px;border:1px solid var(--acento);background:var(--acento);color:var(--acento-txt);padding:10px 16px;cursor:pointer;min-height:44px}
+.btn.sec{background:transparent;color:var(--acento)}
+.btn.peq{padding:6px 10px;min-height:34px;font-size:.88rem}
+.btn:focus-visible,input:focus-visible,textarea:focus-visible,summary:focus-visible{outline:3px solid var(--acento-forte);outline-offset:2px}
+.linha-btns{display:flex;flex-wrap:wrap;gap:8px}
+label.campo{display:flex;flex-direction:column;gap:4px;font-weight:600;font-size:.92rem}
+label.campo small{font-weight:400;color:var(--suave)}
+input[type=text],input[type=date],input[type=datetime-local],textarea{font:inherit;font-weight:400;border:1px solid var(--linha);border-radius:8px;padding:9px 10px;background:var(--campo);color:var(--tinta);width:100%}
+textarea{min-height:70px;resize:vertical}
+.grade2{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px}
+details>summary{cursor:pointer;font-weight:600}
+.resumo{display:flex;flex-wrap:wrap;gap:8px}
+.pilula{display:inline-flex;align-items:center;gap:6px;border-radius:99px;padding:4px 12px;font-weight:700;font-size:.9rem}
+.p-alto{background:var(--alto-bg);color:var(--alto)}
+.p-medio{background:var(--medio-bg);color:var(--medio)}
+.p-info{background:var(--info-bg);color:var(--info)}
+.p-ok{background:var(--ok-bg);color:var(--ok)}
+.alertas{display:flex;flex-direction:column;gap:8px;margin:0;padding:0;list-style:none}
+.alerta{border-left:5px solid var(--info);background:var(--info-bg);padding:10px 12px;border-radius:0 8px 8px 0;display:flex;flex-direction:column;gap:3px;min-width:0}
+.alerta.alto{border-color:var(--alto);background:var(--alto-bg)}
+.alerta.medio{border-color:var(--medio);background:var(--medio-bg)}
+.alerta .nv{font-family:var(--f-mono);font-size:.7rem;letter-spacing:.08em;text-transform:uppercase}
+.alerta.alto .nv{color:var(--alto)} .alerta.medio .nv{color:var(--medio)} .alerta.info .nv{color:var(--info)}
+.alerta .tt{font-weight:700}
+.alerta .dt{font-size:.93rem;overflow-wrap:anywhere}
+.alerta .pq{font-size:.88rem;color:var(--suave)}
+.arquivo{gap:14px}
+.arq-cab{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;align-items:baseline}
+.mono{font-family:var(--f-mono);font-size:.82rem;overflow-wrap:anywhere}
+.hash{background:var(--campo);border:1px solid var(--linha);border-radius:8px;padding:8px 10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.hash .mono{flex:1;min-width:0}
+.rol{overflow-x:auto}
+.rol table{min-width:520px}
+table{border-collapse:collapse;width:100%;font-size:.9rem;font-variant-numeric:tabular-nums}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--linha);vertical-align:top}
+th{font-weight:600;color:var(--suave);white-space:nowrap}
+td{overflow-wrap:anywhere}
+.kv{display:grid;grid-template-columns:minmax(120px,38%) 1fr;gap:0;font-size:.92rem}
+.kv>div{padding:6px 4px;border-bottom:1px solid var(--linha);min-width:0;overflow-wrap:anywhere}
+.kv>div:nth-child(odd){color:var(--suave)}
+.kv small{font-family:var(--f-mono);font-size:.72rem;color:var(--suave)}
+.imagens{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.img-card{border:1px solid var(--linha);border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:8px;min-width:0;background:var(--campo)}
+.img-card .vis{display:flex;gap:6px}
+.img-card .vis figure{margin:0;flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.img-card img{width:100%;height:150px;object-fit:contain;background:#000;border-radius:4px}
+.img-card figcaption{font-size:.75rem;color:var(--suave)}
+.tempo{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.tempo li{display:grid;grid-template-columns:minmax(150px,auto) 1fr;gap:4px 12px;padding:7px 0;border-bottom:1px solid var(--linha);font-size:.92rem}
+.tempo li .q{font-family:var(--f-mono);font-size:.8rem;font-variant-numeric:tabular-nums}
+.tempo li.caso{background:var(--ok-bg)}
+.tempo li .rel{font-size:.8rem;color:var(--suave)}
+.vazio{color:var(--suave);font-size:.95rem}
+.lista-achou{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px 16px;margin:0;padding-left:18px;color:var(--suave);font-size:.93rem}
+.aviso{font-size:.88rem;color:var(--suave);border-top:1px solid var(--linha);padding-top:10px}
+.rel-caixa{background:var(--papel);color:var(--tinta);border:1px solid var(--linha);border-radius:var(--raio);padding:18px;font-family:var(--f-txt)}
+.rel-caixa h2{font-size:1.25rem}
+.rel-caixa h3{margin-top:14px}
+.rel-caixa p,.rel-caixa li{font-size:.94rem}
+.rel-caixa ol,.rel-caixa ul{padding-left:20px;margin:6px 0}
+.rel-caixa .mono{font-size:.78rem}
+.status{font-size:.9rem;color:var(--suave);min-height:1.4em}
+a{color:var(--acento)}
+@media (max-width:520px){ .kv{grid-template-columns:1fr} .kv>div:nth-child(odd){border-bottom:0;padding-bottom:0;font-size:.82rem} .tempo li{grid-template-columns:1fr} h1{font-size:1.6rem} }
+@media (prefers-reduced-motion:no-preference){ .alerta{transition:background .2s} }
+@media print{
+  body.imprimir .pagina>*:not(#secRelatorio){display:none!important}
+  body.imprimir #secRelatorio .linha-btns, body.imprimir #secRelatorio .status{display:none!important}
+  body.imprimir{background:#fff;color:#000}
+  body.imprimir .rel-caixa{border:0;padding:0}
+}
+</style>
+</head>
+<body>
+
+
+<main class="pagina">
+  <header class="topo">
+    <span class="selo">Análise técnica de documentos · roda só neste aparelho</span>
+    <h1>Perito de Metadados</h1>
+    <p class="sub">Coloque o contrato, o laudo de biometria ou a selfie que o banco juntou. A ferramenta abre os dados escondidos do arquivo, aponta as contradições e monta um relatório que o juiz pode conferir sozinho. Nenhum arquivo sai do aparelho.</p>
+  </header>
+
+  <section class="bloco" aria-labelledby="t1">
+    <div class="passo"><b>1</b><h2 id="t1">Arquivos para analisar</h2></div>
+    <div class="soltar" id="soltar">
+      <p>PDF, foto (JPG, PNG, WEBP) ou Word (DOCX). Pode escolher vários de uma vez.</p>
+      <div class="linha-btns" style="justify-content:center">
+        <label class="btn" for="entrada" tabindex="0" id="btnEscolher">Escolher arquivos</label>
+        <button class="btn sec" id="btnExemplo" type="button">Ver exemplo fictício</button>
+        <button class="btn sec" id="btnLimpar" type="button" hidden>Limpar tudo</button>
+      </div>
+      <input type="file" id="entrada" multiple hidden accept=".pdf,.jpg,.jpeg,.png,.webp,.docx,.xlsx,.pptx,.odt,image/*,application/pdf">
+      <p class="status" id="status" role="status"></p>
+    </div>
+  </section>
+
+  <section class="bloco" aria-labelledby="t2">
+    <div class="passo"><b>2</b><h2 id="t2">Dados do caso <span style="font-weight:400;font-size:.9rem;color:var(--suave)">(opcional, deixa a análise mais forte)</span></h2></div>
+    <div class="grade2">
+      <label class="campo">Processo ou nome do caso
+        <input type="text" id="cProcesso" placeholder="Ex.: 5000762-33.2024.8.13.0395">
+      </label>
+      <label class="campo">Data do contrato contestado
+        <input type="date" id="cContrato">
+      </label>
+      <label class="campo">Data e hora da "prova de vida" / assinatura alegada
+        <input type="datetime-local" id="cProva">
+      </label>
+      <label class="campo">Endereço do cliente
+        <input type="text" id="cEndereco" placeholder="Rua, número, cidade - MG">
+      </label>
+    </div>
+    <label class="campo">Coordenadas da casa do cliente
+      <small>No Google Maps, segure o dedo em cima da casa e copie os números que aparecem (ex.: -20.3586, -41.9581). Pode colar o link do Maps também.</small>
+      <input type="text" id="cCoord" placeholder="-20.3586, -41.9581">
+    </label>
+    <div class="linha-btns"><button class="btn sec peq" type="button" id="btnGeo">Buscar coordenadas pelo endereço</button><span class="status" id="geoStatus"></span></div>
+    <label class="campo">Coordenadas, IP ou textos que aparecem no laudo
+      <small>Se o laudo for imagem escaneada, a ferramenta não consegue ler o texto. Digite aqui o que está escrito nele (latitude, longitude, IP).</small>
+      <textarea id="cTexto" placeholder="Latitude: -20.6136  Longitude: -42.1436  IP: 177.10.20.30"></textarea>
+    </label>
+    <p class="aviso">Estes dados não são guardados. Ao fechar a página, somem.</p>
+  </section>
+
+  <section class="bloco" id="secResultado" aria-labelledby="t3">
+    <div class="passo"><b>3</b><h2 id="t3">O que foi encontrado</h2></div>
+    <div id="resultado"><p class="vazio">Nenhum arquivo ainda. Toque em "Ver exemplo fictício" para ver como funciona, ou escolha os arquivos do processo.</p>
+      <ul class="lista-achou">
+        <li>Programa que gerou o PDF (Word, robô, sistema de biometria)</li>
+        <li>Datas de criação e de modificação</li>
+        <li>Quantas vezes o PDF foi salvo, e a versão original escondida</li>
+        <li>Contradições entre os dados internos</li>
+        <li>Aparelho e versão do sistema de cada foto</li>
+        <li>Celular virtual (emulador)</li>
+        <li>Foto em preto e branco e foto editada</li>
+        <li>Miniatura diferente da foto</li>
+        <li>Localização GPS ou por rede, e a distância até a casa</li>
+        <li>Assinatura digital e alteração depois dela</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="bloco" id="secRelatorio" aria-labelledby="t4" hidden>
+    <div class="passo"><b>4</b><h2 id="t4">Relatório para o processo</h2></div>
+    <p class="sub">Texto pronto para juntar como anexo ou citar na petição. Traz o código de autenticidade (SHA-256) de cada arquivo e o passo a passo para o juízo repetir a análise com ferramentas independentes.</p>
+    <div class="linha-btns" id="relBtns"></div>
+    <p class="status" id="relStatus"></p>
+    <div class="rel-caixa" id="relatorio"></div>
+  </section>
+</main>
+
+<script>
+'use strict';
+/* =====================================================================
+   Perito de Metadados — v1.0
+   Tudo roda no aparelho. Sem bibliotecas externas.
+   Lê: PDF (Info, XMP, revisões, assinaturas, imagens, texto), JPEG/PNG/WEBP
+   (EXIF, GPS, miniatura, XMP, segmentos), DOCX/XLSX/PPTX/ODT (docProps).
+   ===================================================================== */
+const VERSAO = '1.0';
+const EMBUTIDO = (() => { try { return window.top !== window.self; } catch (e) { return true; } })();
+const $ = (s, el = document) => el.querySelector(s);
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const estado = { arquivos: [], alertas: [], eventos: [], coordsAchadas: [], ips: [], exemplo: false };
+let seq = 0;
+
+/* ---------------------------------------------------------------- bytes */
+function latin1(b) { let s = ''; for (let i = 0; i < b.length; i += 0x8000) s += String.fromCharCode.apply(null, b.subarray(i, i + 0x8000)); return s; }
+function deLatin1(s) { const b = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) b[i] = s.charCodeAt(i) & 255; return b; }
+function juntar(partes) { let t = 0; partes.forEach((p) => t += p.length); const o = new Uint8Array(t); let k = 0; partes.forEach((p) => { o.set(p, k); k += p.length; }); return o; }
+function utf8(b) { try { return new TextDecoder('utf-8').decode(b); } catch (e) { return latin1(b); } }
+function decTexto(b) {
+  if (b.length >= 2 && b[0] === 0xFE && b[1] === 0xFF) { let s = ''; for (let i = 2; i + 1 < b.length; i += 2) s += String.fromCharCode((b[i] << 8) | b[i + 1]); return s; }
+  if (b.length >= 3 && b[0] === 0xEF && b[1] === 0xBB && b[2] === 0xBF) return utf8(b.subarray(3));
+  return latin1(b);
+}
+function tamanhoTxt(n) { return n < 1024 ? n + ' bytes' : n < 1048576 ? (n / 1024).toFixed(1).replace('.', ',') + ' KB' : (n / 1048576).toFixed(2).replace('.', ',') + ' MB'; }
+
+/* --------------------------------------------------------------- SHA-256 */
+function sha256js(m) {
+  const K = new Uint32Array([0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2]);
+  const H = new Uint32Array([0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19]);
+  const l = m.length, nb = ((l + 9 + 63) >> 6) << 6, b = new Uint8Array(nb); b.set(m); b[l] = 0x80;
+  const dv = new DataView(b.buffer), bits = l * 8; dv.setUint32(nb - 4, bits >>> 0); dv.setUint32(nb - 8, Math.floor(bits / 4294967296));
+  const W = new Uint32Array(64);
+  for (let o = 0; o < nb; o += 64) {
+    for (let i = 0; i < 16; i++) W[i] = dv.getUint32(o + i * 4);
+    for (let i = 16; i < 64; i++) { const x = W[i - 15], y = W[i - 2]; W[i] = (W[i - 16] + (((x >>> 7) | (x << 25)) ^ ((x >>> 18) | (x << 14)) ^ (x >>> 3)) + W[i - 7] + (((y >>> 17) | (y << 15)) ^ ((y >>> 19) | (y << 13)) ^ (y >>> 10))) >>> 0; }
+    let a = H[0], bb = H[1], c = H[2], d = H[3], e = H[4], f = H[5], g = H[6], h = H[7];
+    for (let i = 0; i < 64; i++) {
+      const t1 = (h + (((e >>> 6) | (e << 26)) ^ ((e >>> 11) | (e << 21)) ^ ((e >>> 25) | (e << 7))) + ((e & f) ^ (~e & g)) + K[i] + W[i]) >>> 0;
+      const t2 = ((((a >>> 2) | (a << 30)) ^ ((a >>> 13) | (a << 19)) ^ ((a >>> 22) | (a << 10))) + ((a & bb) ^ (a & c) ^ (bb & c))) >>> 0;
+      h = g; g = f; f = e; e = (d + t1) >>> 0; d = c; c = bb; bb = a; a = (t1 + t2) >>> 0;
+    }
+    H[0] += a; H[1] += bb; H[2] += c; H[3] += d; H[4] += e; H[5] += f; H[6] += g; H[7] += h;
+  }
+  return Array.from(H).map((x) => x.toString(16).padStart(8, '0')).join('');
+}
+async function sha256(b) {
+  try { if (crypto && crypto.subtle) { const h = await crypto.subtle.digest('SHA-256', b); return Array.from(new Uint8Array(h)).map((x) => x.toString(16).padStart(2, '0')).join(''); } } catch (e) {}
+  return sha256js(b);
+}
+
+/* ----------------------------------------------------------- descompressão */
+async function inflar(bytes, fmt) {
+  if (!('DecompressionStream' in window)) throw new Error('navegador sem descompressão');
+  const ds = new DecompressionStream(fmt), w = ds.writable.getWriter();
+  w.write(bytes).catch(() => {}); w.close().catch(() => {});
+  const r = ds.readable.getReader(), partes = []; let total = 0;
+  try { for (;;) { const { done, value } = await r.read(); if (done) break; partes.push(value); total += value.length; if (total > 80e6) break; } }
+  catch (e) { if (!total) throw e; }
+  return juntar(partes);
+}
+async function inflarZlib(bytes) {
+  try { return await inflar(bytes, 'deflate'); } catch (e) {}
+  try { return await inflar(bytes.subarray(2), 'deflate-raw'); } catch (e) {}
+  return null;
+}
+
+/* ------------------------------------------------------------------ datas */
+const p2 = (n) => String(n).padStart(2, '0');
+function mkData(y, mo, d, h, mi, s, tz) {
+  y = +y; mo = +mo || 1; d = +d || 1; h = +h || 0; mi = +mi || 0; s = +s || 0;
+  if (!y || y < 1970 || y > 2100) return null;
+  const off = tz == null ? -180 : tz;
+  const dt = new Date(Date.UTC(y, mo - 1, d, h, mi, s) - off * 60000);
+  let fuso = '';
+  if (tz == null) fuso = ' (sem fuso)';
+  else if (tz === -180) fuso = ' (Brasília)';
+  else fuso = ' (UTC' + (tz < 0 ? '−' : '+') + p2(Math.floor(Math.abs(tz) / 60)) + ':' + p2(Math.abs(tz) % 60) + ')';
+  return { d: dt, semFuso: tz == null, mostrar: p2(d) + '/' + p2(mo) + '/' + y + ' ' + p2(h) + ':' + p2(mi) + ':' + p2(s) + fuso };
+}
+function dataPdf(t) {
+  const m = /(\d{4})(\d{2})?(\d{2})?(\d{2})?(\d{2})?(\d{2})?\s*([Zz+\-])?\s*(\d{2})?'?(\d{2})?/.exec(String(t || '').replace(/^D:/, ''));
+  if (!m) return null;
+  let tz = null;
+  if (m[7] === 'Z' || m[7] === 'z') tz = 0; else if (m[7]) tz = (m[7] === '-' ? -1 : 1) * ((+m[8] || 0) * 60 + (+m[9] || 0));
+  const r = mkData(m[1], m[2], m[3], m[4], m[5], m[6], tz); if (r) r.original = t; return r;
+}
+function dataExif(t, off) {
+  const m = /(\d{4})[:\-](\d{2})[:\-](\d{2})[ T](\d{2}):(\d{2}):(\d{2})/.exec(String(t || '')); if (!m) return null;
+  let tz = null; const o = /([+\-])(\d{2}):?(\d{2})/.exec(off || ''); if (o) tz = (o[1] === '-' ? -1 : 1) * (+o[2] * 60 + +o[3]);
+  const r = mkData(m[1], m[2], m[3], m[4], m[5], m[6], tz); if (r) r.original = t + (off ? ' ' + off : ''); return r;
+}
+function dataIso(t) {
+  const m = /(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2})(?::(\d{2}))?(?:\.\d+)?)?\s*(Z|[+\-]\d{2}:?\d{2})?/.exec(String(t || '')); if (!m) return null;
+  let tz = null; if (m[7] === 'Z') tz = 0; else if (m[7]) { const o = /([+\-])(\d{2}):?(\d{2})/.exec(m[7]); tz = (o[1] === '-' ? -1 : 1) * (+o[2] * 60 + +o[3]); }
+  const r = mkData(m[1], m[2], m[3], m[4], m[5], m[6], tz); if (r) r.original = t; return r;
+}
+function difTxt(ms) {
+  const a = Math.abs(ms), min = Math.round(a / 60000), h = Math.floor(a / 3600000), d = Math.floor(a / 86400000);
+  if (a < 90000) return Math.round(a / 1000) + ' segundos';
+  if (a < 5400000) return min + ' minutos';
+  if (a < 172800000) return h + ' horas';
+  if (d < 60) return d + ' dias';
+  const meses = Math.round(d / 30.44); if (d < 730) return d + ' dias (cerca de ' + meses + ' meses)';
+  return d + ' dias (cerca de ' + (d / 365.25).toFixed(1).replace('.', ',') + ' anos)';
+}
+
+/* ------------------------------------------------------------- coordenadas */
+function num(s) { return parseFloat(String(s).replace(',', '.')); }
+function noBrasil(lat, lon) { return lat >= -34.5 && lat <= 6 && lon >= -74.5 && lon <= -28; }
+function acharCoordenadas(txt, solto) {
+  const out = [], t = String(txt || '');
+  const add = (lat, lon, como) => { if (!isFinite(lat) || !isFinite(lon) || Math.abs(lat) > 90 || Math.abs(lon) > 180) return; if (!solto && !noBrasil(lat, lon)) return; if (!out.some((c) => Math.abs(c.lat - lat) < 1e-6 && Math.abs(c.lon - lon) < 1e-6)) out.push({ lat, lon, como }); };
+  let m;
+  const reRot = /lat(?:itude)?\.?\s*[:=]?\s*(-?\d{1,2}(?:[.,]\d+)?)[\s\S]{0,80}?lon(?:g(?:itude)?)?\.?\s*[:=]?\s*(-?\d{1,3}(?:[.,]\d+)?)/gi;
+  while ((m = reRot.exec(t))) { let la = num(m[1]), lo = num(m[2]); add(la, lo, 'com rótulo'); }
+  const reLink = /(?:@|[?&]q=|[?&]ll=|query=)(-?\d{1,2}\.\d+),\s*(-?\d{1,3}\.\d+)/g;
+  while ((m = reLink.exec(t))) add(num(m[1]), num(m[2]), 'link de mapa');
+  const reG = /!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/g;
+  while ((m = reG.exec(t))) add(num(m[1]), num(m[2]), 'link de mapa');
+  const reDms = /(\d{1,2})\s*[°º]\s*(\d{1,2})\s*['’′]\s*(?:(\d{1,2}(?:[.,]\d+)?)\s*(?:["”″]|''))?\s*([NS])[\s,;]+(\d{1,3})\s*[°º]\s*(\d{1,2})\s*['’′]\s*(?:(\d{1,2}(?:[.,]\d+)?)\s*(?:["”″]|''))?\s*([EWOL])/gi;
+  while ((m = reDms.exec(t))) {
+    let la = +m[1] + +m[2] / 60 + (m[3] ? num(m[3]) / 3600 : 0), lo = +m[5] + +m[6] / 60 + (m[7] ? num(m[7]) / 3600 : 0);
+    if (/s/i.test(m[4])) la = -la; if (/[wo]/i.test(m[8])) lo = -lo; add(la, lo, 'graus/minutos');
+  }
+  const rePar = /(-?\d{1,2}[.,]\d{3,})\s*[,;\/ ]\s*(-?\d{1,3}[.,]\d{3,})/g;
+  while ((m = rePar.exec(t))) add(num(m[1]), num(m[2]), 'par de números');
+  return out;
+}
+function acharIps(txt) {
+  const out = [], re = /(?<![\d.])((?:25[0-5]|2[0-4]\d|1?\d?\d)(?:\.(?:25[0-5]|2[0-4]\d|1?\d?\d)){3})(?![\d.])/g; let m;
+  while ((m = re.exec(String(txt || '')))) { const ip = m[1]; if (/^(0\.|255\.)/.test(ip) || /^\d\.\d\.\d\.\d$/.test(ip)) continue; if (!out.includes(ip)) out.push(ip); }
+  return out;
+}
+function distKm(a, b) {
+  const R = 6371, r = (x) => x * Math.PI / 180, dLa = r(b.lat - a.lat), dLo = r(b.lon - a.lon);
+  const h = Math.sin(dLa / 2) ** 2 + Math.cos(r(a.lat)) * Math.cos(r(b.lat)) * Math.sin(dLo / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(h));
+}
+const kmTxt = (k) => k < 1 ? Math.round(k * 1000) + ' metros' : k.toFixed(1).replace('.', ',') + ' km';
+const coordTxt = (c) => c.lat.toFixed(6) + ', ' + c.lon.toFixed(6);
+const linkMapa = (c) => 'https://www.google.com/maps?q=' + c.lat.toFixed(6) + ',' + c.lon.toFixed(6);
+function coordCliente() { const c = acharCoordenadas($('#cCoord').value, true); return c[0] || null; }
+
+/* ================================================================ TIFF/EXIF */
+const TAGS0 = { 0x010E: 'ImageDescription', 0x010F: 'Make', 0x0110: 'Model', 0x0112: 'Orientation', 0x011A: 'XResolution', 0x011B: 'YResolution', 0x0128: 'ResolutionUnit', 0x0131: 'Software', 0x0132: 'DateTime', 0x013B: 'Artist', 0x0213: 'YCbCrPositioning', 0x8298: 'Copyright', 0x8769: 'ExifIFD', 0x8825: 'GPSIFD', 0x0100: 'ImageWidth', 0x0101: 'ImageLength', 0x0103: 'Compression', 0x0201: 'ThumbOffset', 0x0202: 'ThumbLength', 0x9c9b: 'XPTitle', 0x9c9c: 'XPComment', 0x9c9d: 'XPAuthor' };
+const TAGSX = { 0x829A: 'ExposureTime', 0x829D: 'FNumber', 0x8822: 'ExposureProgram', 0x8827: 'ISO', 0x9000: 'ExifVersion', 0x9003: 'DateTimeOriginal', 0x9004: 'DateTimeDigitized', 0x9010: 'OffsetTime', 0x9011: 'OffsetTimeOriginal', 0x9012: 'OffsetTimeDigitized', 0x9201: 'ShutterSpeed', 0x9202: 'Aperture', 0x9204: 'ExposureBias', 0x9207: 'MeteringMode', 0x9209: 'Flash', 0x920A: 'FocalLength', 0x927C: 'MakerNote', 0x9286: 'UserComment', 0x9290: 'SubSecTime', 0x9291: 'SubSecTimeOriginal', 0x9292: 'SubSecTimeDigitized', 0xA001: 'ColorSpace', 0xA002: 'PixelXDimension', 0xA003: 'PixelYDimension', 0xA005: 'InteropIFD', 0xA402: 'ExposureMode', 0xA403: 'WhiteBalance', 0xA405: 'FocalLengthIn35mm', 0xA406: 'SceneCaptureType', 0xA420: 'ImageUniqueID', 0xA430: 'CameraOwnerName', 0xA431: 'BodySerialNumber', 0xA433: 'LensMake', 0xA434: 'LensModel' };
+const TAGSG = { 0: 'GPSVersionID', 1: 'GPSLatitudeRef', 2: 'GPSLatitude', 3: 'GPSLongitudeRef', 4: 'GPSLongitude', 5: 'GPSAltitudeRef', 6: 'GPSAltitude', 7: 'GPSTimeStamp', 8: 'GPSSatellites', 0x0B: 'GPSDOP', 0x0C: 'GPSSpeedRef', 0x0D: 'GPSSpeed', 0x10: 'GPSImgDirectionRef', 0x11: 'GPSImgDirection', 0x12: 'GPSMapDatum', 0x1B: 'GPSProcessingMethod', 0x1D: 'GPSDateStamp', 0x1F: 'GPSHPositioningError' };
+function lerTiff(b) {
+  if (b.length < 8) return null;
+  const dv = new DataView(b.buffer, b.byteOffset, b.byteLength), le = b[0] === 0x49;
+  if (!(b[0] === 0x49 && b[1] === 0x49) && !(b[0] === 0x4D && b[1] === 0x4D)) return null;
+  const u16 = (o) => dv.getUint16(o, le), u32 = (o) => dv.getUint32(o, le), s32 = (o) => dv.getInt32(o, le);
+  const TAM = { 1: 1, 2: 1, 3: 2, 4: 4, 5: 8, 6: 1, 7: 1, 8: 2, 9: 4, 10: 8, 11: 4, 12: 8 };
+  function ifd(off, nomes, vistos) {
+    const tags = {}; if (!off || off + 2 > b.length || vistos.has(off)) return { tags, prox: 0 }; vistos.add(off);
+    const n = u16(off); if (n > 500) return { tags, prox: 0 };
+    for (let i = 0; i < n; i++) {
+      const e = off + 2 + i * 12; if (e + 12 > b.length) break;
+      const tag = u16(e), tipo = u16(e + 2), cnt = u32(e + 4), sz = (TAM[tipo] || 1) * cnt;
+      const vo = sz <= 4 ? e + 8 : u32(e + 8); if (vo + sz > b.length || cnt > 1e6) continue;
+      let v;
+      try {
+        if (tipo === 2) v = latin1(b.subarray(vo, vo + cnt)).replace(/\0+[\s\S]*$/, '').trim();
+        else if (tipo === 3) { v = []; for (let k = 0; k < cnt; k++) v.push(u16(vo + k * 2)); }
+        else if (tipo === 4) { v = []; for (let k = 0; k < cnt; k++) v.push(u32(vo + k * 4)); }
+        else if (tipo === 9) { v = []; for (let k = 0; k < cnt; k++) v.push(s32(vo + k * 4)); }
+        else if (tipo === 5) { v = []; for (let k = 0; k < cnt; k++) { const dn = u32(vo + k * 8 + 4); v.push(dn ? u32(vo + k * 8) / dn : 0); } }
+        else if (tipo === 10) { v = []; for (let k = 0; k < cnt; k++) { const dn = s32(vo + k * 8 + 4); v.push(dn ? s32(vo + k * 8) / dn : 0); } }
+        else v = b.subarray(vo, vo + Math.min(cnt, 4096));
+      } catch (er) { continue; }
+      if (Array.isArray(v) && v.length === 1) v = v[0];
+      tags[nomes[tag] || ('0x' + tag.toString(16).padStart(4, '0'))] = v;
+    }
+    const po = off + 2 + n * 12; return { tags, prox: po + 4 <= b.length ? u32(po) : 0 };
+  }
+  const vistos = new Set();
+  const r0 = ifd(u32(4), TAGS0, vistos), out = { ifd0: r0.tags, exif: {}, gps: {}, ifd1: {}, miniatura: null };
+  if (typeof r0.tags.ExifIFD === 'number') out.exif = ifd(r0.tags.ExifIFD, TAGSX, vistos).tags;
+  if (typeof r0.tags.GPSIFD === 'number') out.gps = ifd(r0.tags.GPSIFD, TAGSG, vistos).tags;
+  if (r0.prox) { out.ifd1 = ifd(r0.prox, TAGS0, vistos).tags; const o = out.ifd1.ThumbOffset, l = out.ifd1.ThumbLength; if (typeof o === 'number' && typeof l === 'number' && o + l <= b.length && l > 100) out.miniatura = b.slice(o, o + l); }
+  return out;
+}
+function textoIndef(v) { if (!(v instanceof Uint8Array)) return String(v || ''); let t = v; if (/^(ASCII|UNICODE|JIS)\0/.test(latin1(v.subarray(0, 8))) || v[0] === 0 && v.length > 8) t = v.subarray(8); return latin1(t).replace(/\0/g, '').trim(); }
+function gpsDe(g) {
+  if (!g || g.GPSLatitude == null || g.GPSLongitude == null) return null;
+  const dms = (a) => Array.isArray(a) ? (a[0] || 0) + (a[1] || 0) / 60 + (a[2] || 0) / 3600 : +a;
+  let lat = dms(g.GPSLatitude), lon = dms(g.GPSLongitude);
+  if (/S/i.test(g.GPSLatitudeRef || '')) lat = -Math.abs(lat); if (/W/i.test(g.GPSLongitudeRef || '')) lon = -Math.abs(lon);
+  if (!isFinite(lat) || !isFinite(lon) || (lat === 0 && lon === 0)) return null;
+  const metodo = g.GPSProcessingMethod != null ? textoIndef(g.GPSProcessingMethod) : '';
+  let quando = null;
+  if (g.GPSDateStamp) { const t = Array.isArray(g.GPSTimeStamp) ? g.GPSTimeStamp : [0, 0, 0]; const m = /(\d{4}):(\d{2}):(\d{2})/.exec(g.GPSDateStamp); if (m) quando = mkData(m[1], m[2], m[3], Math.floor(t[0]), Math.floor(t[1]), Math.floor(t[2]), 0); }
+  return { lat, lon, metodo, quando, precisao: typeof g.GPSHPositioningError === 'number' ? g.GPSHPositioningError : null, dop: typeof g.GPSDOP === 'number' ? g.GPSDOP : null };
+}
+
+/* ===================================================================== XMP */
+function desEnt(s) { return String(s).replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&#(\d+);/g, (_, n) => String.fromCharCode(+n)).replace(/&amp;/g, '&'); }
+const XMP_CAMPOS = ['xmp:CreateDate', 'xmp:ModifyDate', 'xmp:MetadataDate', 'xmp:CreatorTool', 'pdf:Producer', 'pdf:Keywords', 'dc:creator', 'dc:title', 'dc:format', 'xmpMM:DocumentID', 'xmpMM:InstanceID', 'xmpMM:OriginalDocumentID', 'photoshop:DateCreated', 'exif:DateTimeOriginal', 'exif:GPSLatitude', 'exif:GPSLongitude', 'exif:GPSProcessingMethod', 'tiff:Make', 'tiff:Model', 'tiff:Software', 'tiff:DateTime'];
+function lerXmp(txt) {
+  const campos = {};
+  const pegar = (k) => {
+    const vals = []; let m;
+    const r1 = new RegExp('<' + k + '(?:\\s[^>]*)?>([\\s\\S]*?)</' + k + '>', 'g'); while ((m = r1.exec(txt))) vals.push(desEnt(m[1].replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()));
+    const r2 = new RegExp('\\s' + k + '="([^"]*)"', 'g'); while ((m = r2.exec(txt))) vals.push(desEnt(m[1]));
+    return vals.filter(Boolean);
+  };
+  XMP_CAMPOS.forEach((k) => { const v = pegar(k); if (v.length) campos[k] = v.length === 1 ? v[0] : v; });
+  const historico = []; const reLi = /<rdf:li\b[^>]*?(?:\/>|>[\s\S]*?<\/rdf:li>)/g; let m;
+  const area = (/<xmpMM:History>([\s\S]*?)<\/xmpMM:History>/.exec(txt) || [])[1] || '';
+  while ((m = reLi.exec(area))) {
+    const li = m[0], at = (k) => { const a = new RegExp('stEvt:' + k + '="([^"]*)"').exec(li) || new RegExp('<stEvt:' + k + '>([\\s\\S]*?)</stEvt:' + k + '>').exec(li); return a ? desEnt(a[1].trim()) : ''; };
+    const ev = { acao: at('action'), quando: at('when'), programa: at('softwareAgent'), mudou: at('changed') };
+    if (ev.acao || ev.quando || ev.programa) historico.push(ev);
+  }
+  return { campos, historico };
+}
+function gpsXmp(v) { const m = /(\d+),(\d+(?:\.\d+)?)(?:,(\d+(?:\.\d+)?))?\s*([NSEW])/i.exec(v || ''); if (!m) return null; let x = +m[1] + +m[2] / 60 + (m[3] ? +m[3] / 3600 : 0); if (/[SW]/i.test(m[4])) x = -x; return x; }
+
+/* ================================================================== JPEG */
+const ZZ = [0,1,8,16,9,2,3,10,17,24,32,25,18,11,4,5,12,19,26,33,40,48,41,34,27,20,13,6,7,14,21,28,35,42,49,56,57,50,43,36,29,22,15,23,30,37,44,51,58,59,52,45,38,31,39,46,53,60,61,54,47,55,62,63];
+const LUM = [16,11,10,16,24,40,51,61,12,12,14,19,26,58,60,55,14,13,16,24,40,57,69,56,14,17,22,29,51,87,80,62,18,22,37,56,68,109,103,77,24,35,55,64,81,104,113,92,49,64,78,87,103,121,120,101,72,92,95,98,112,100,103,99];
+function lerJpeg(b) {
+  if (!(b[0] === 0xFF && b[1] === 0xD8)) return null;
+  const out = { tiff: null, xmp: [], comentarios: [], segmentos: [], qualidade: null, componentes: null, largura: null, altura: null, progressivo: false };
+  let p = 2;
+  while (p + 4 <= b.length) {
+    if (b[p] !== 0xFF) { p++; continue; }
+    const m = b[p + 1];
+    if (m === 0xFF) { p++; continue; }
+    if (m === 0xD8 || m === 0x01 || (m >= 0xD0 && m <= 0xD7)) { p += 2; continue; }
+    if (m === 0xD9 || m === 0xDA) break;
+    const len = (b[p + 2] << 8) | b[p + 3]; if (len < 2) break;
+    const seg = b.subarray(p + 4, Math.min(b.length, p + 2 + len));
+    if (m >= 0xE0 && m <= 0xEF) {
+      const id = latin1(seg.subarray(0, 40)).split('\0')[0];
+      out.segmentos.push('APP' + (m - 0xE0) + (id && /^[\x20-\x7e]{2,}$/.test(id) ? ' "' + id.slice(0, 32) + '"' : ''));
+      if (m === 0xE1 && id === 'Exif' && !out.tiff) out.tiff = lerTiff(seg.subarray(6));
+      if (m === 0xE1 && /^http:\/\/ns\.adobe\.com\/xap\/1\.0\//.test(id)) out.xmp.push(utf8(seg.subarray(id.length + 1)));
+    } else if (m === 0xFE) out.comentarios.push(latin1(seg).replace(/\0/g, '').trim());
+    else if (m === 0xDB) {
+      let q = 0; while (q < seg.length) { const pq = seg[q] >> 4, id = seg[q] & 15; q++; const t = []; for (let i = 0; i < 64; i++) { t.push(pq ? (seg[q] << 8) | seg[q + 1] : seg[q]); q += pq ? 2 : 1; } if (id === 0 && out.qualidade == null) { let soma = 0; for (let k = 0; k < 64; k++) soma += t[k] * 100 / LUM[ZZ[k]]; const esc2 = soma / 64; out.qualidade = Math.max(1, Math.min(100, Math.round(esc2 <= 100 ? (200 - esc2) / 2 : 5000 / esc2))); } }
+    } else if (m === 0xC0 || m === 0xC1 || m === 0xC2) { out.altura = (seg[1] << 8) | seg[2]; out.largura = (seg[3] << 8) | seg[4]; out.componentes = seg[5]; out.progressivo = m === 0xC2; }
+    p += 2 + len;
+  }
+  return out;
+}
+function lerPng(b) {
+  const out = { tiff: null, xmp: [], textos: [], quando: null, tipoCor: null, largura: null, altura: null };
+  let p = 8; const dv = new DataView(b.buffer, b.byteOffset, b.byteLength);
+  const pendentes = [];
+  while (p + 12 <= b.length) {
+    const len = dv.getUint32(p), tipo = latin1(b.subarray(p + 4, p + 8)), d = b.subarray(p + 8, p + 8 + len);
+    if (tipo === 'IHDR') { out.largura = dv.getUint32(p + 8); out.altura = dv.getUint32(p + 12); out.tipoCor = d[9]; }
+    else if (tipo === 'tEXt') { const i = d.indexOf(0); out.textos.push([latin1(d.subarray(0, i)), latin1(d.subarray(i + 1))]); }
+    else if (tipo === 'iTXt') { const i = d.indexOf(0), chave = latin1(d.subarray(0, i)), comp = d[i + 1]; let j = i + 3; j = d.indexOf(0, j) + 1; j = d.indexOf(0, j) + 1; const corpo = d.subarray(j); if (comp) pendentes.push(inflarZlib(corpo).then((x) => x && out.textos.push([chave, utf8(x)]))); else out.textos.push([chave, utf8(corpo)]); }
+    else if (tipo === 'zTXt') { const i = d.indexOf(0), chave = latin1(d.subarray(0, i)); pendentes.push(inflarZlib(d.subarray(i + 2)).then((x) => x && out.textos.push([chave, latin1(x)]))); }
+    else if (tipo === 'eXIf') out.tiff = lerTiff(d);
+    else if (tipo === 'tIME') out.quando = mkData((d[0] << 8) | d[1], d[2], d[3], d[4], d[5], d[6], 0);
+    else if (tipo === 'IEND') break;
+    p += 12 + len;
+  }
+  return Promise.all(pendentes).then(() => { out.textos.forEach(([k, v]) => { if (/XML:com\.adobe\.xmp/i.test(k)) out.xmp.push(v); }); return out; });
+}
+function lerWebp(b) {
+  const out = { tiff: null, xmp: [] }; let p = 12; const dv = new DataView(b.buffer, b.byteOffset, b.byteLength);
+  while (p + 8 <= b.length) { const tipo = latin1(b.subarray(p, p + 4)), len = dv.getUint32(p + 4, true), d = b.subarray(p + 8, p + 8 + len); if (tipo === 'EXIF') out.tiff = lerTiff(latin1(d.subarray(0, 6)) === 'Exif\0\0' ? d.subarray(6) : d); if (tipo === 'XMP ') out.xmp.push(utf8(d)); p += 8 + len + (len & 1); }
+  return out;
+}
+
+/* ========================================================= imagem (pixels) */
+async function bitmap(blob, semGirar) {
+  try { return await createImageBitmap(blob, semGirar ? { imageOrientation: 'none' } : undefined); } catch (e) {}
+  return await new Promise((ok, falha) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => falha(new Error('imagem não abriu')); i.src = URL.createObjectURL(blob); });
+}
+function tela(w, h) { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; }
+async function analisarPixels(img) {
+  try {
+    const bm = await bitmap(img.blob, true), W = bm.width, H = bm.height;
+    img.largura = img.largura || W; img.altura = img.altura || H;
+    const esc2 = Math.min(1, 400 / Math.max(W, H)), w = Math.max(1, Math.round(W * esc2)), h = Math.max(1, Math.round(H * esc2));
+    const c = tela(w, h), x = c.getContext('2d', { willReadFrequently: true }); x.drawImage(bm, 0, 0, w, h);
+    const d = x.getImageData(0, 0, w, h).data; let cinza = 0, tot = 0;
+    for (let i = 0; i < d.length; i += 16) { tot++; if (Math.abs(d[i] - d[i + 1]) < 7 && Math.abs(d[i + 1] - d[i + 2]) < 7 && Math.abs(d[i] - d[i + 2]) < 7) cinza++; }
+    img.cinza = tot > 0 && cinza / tot > 0.985;
+    if (img.miniaturaBytes) {
+      const mb = new Blob([img.miniaturaBytes], { type: 'image/jpeg' }); img.miniaturaUrl = URL.createObjectURL(mb);
+      const tm = await bitmap(mb, true), tw = tm.width, th = tm.height;
+      const ra = W / H, rb = tw / th;
+      if (Math.abs(ra - rb) / ra < 0.04) {
+        const c1 = tela(tw, th), x1 = c1.getContext('2d', { willReadFrequently: true }); x1.drawImage(bm, 0, 0, tw, th);
+        const c2 = tela(tw, th), x2 = c2.getContext('2d', { willReadFrequently: true }); x2.drawImage(tm, 0, 0);
+        const a = x1.getImageData(0, 0, tw, th).data, bb = x2.getImageData(0, 0, tw, th).data; let s = 0;
+        for (let i = 0; i < a.length; i += 4) s += (Math.abs(a[i] - bb[i]) + Math.abs(a[i + 1] - bb[i + 1]) + Math.abs(a[i + 2] - bb[i + 2])) / 3;
+        img.miniaturaDif = s / (a.length / 4);
+      } else img.miniaturaProporcao = true;
+    }
+  } catch (e) { img.erroPixels = e.message; }
+}
+async function gerarEla(img) {
+  const bm = await bitmap(img.blob, true); let W = bm.width, H = bm.height; const esc2 = Math.min(1, 1600 / Math.max(W, H)); W = Math.round(W * esc2); H = Math.round(H * esc2);
+  const c = tela(W, H), x = c.getContext('2d', { willReadFrequently: true }); x.drawImage(bm, 0, 0, W, H);
+  const orig = x.getImageData(0, 0, W, H);
+  const re = await new Promise((ok) => c.toBlob(ok, 'image/jpeg', 0.9));
+  const bm2 = await bitmap(re, true); const c2 = tela(W, H), x2 = c2.getContext('2d', { willReadFrequently: true }); x2.drawImage(bm2, 0, 0);
+  const novo = x2.getImageData(0, 0, W, H), o = orig.data, n = novo.data, saida = x.createImageData(W, H), s = saida.data;
+  for (let i = 0; i < o.length; i += 4) { s[i] = Math.min(255, Math.abs(o[i] - n[i]) * 18); s[i + 1] = Math.min(255, Math.abs(o[i + 1] - n[i + 1]) * 18); s[i + 2] = Math.min(255, Math.abs(o[i + 2] - n[i + 2]) * 18); s[i + 3] = 255; }
+  x.putImageData(saida, 0, 0);
+  img.ela = c.toDataURL('image/jpeg', 0.85); img.elaEscala = esc2;
+}
+function miniDataUrl(img, max) {
+  return bitmap(img.blob, false).then((bm) => { const e = Math.min(1, max / Math.max(bm.width, bm.height)); const c = tela(Math.round(bm.width * e), Math.round(bm.height * e)); c.getContext('2d').drawImage(bm, 0, 0, c.width, c.height); return c.toDataURL('image/jpeg', 0.8); }).catch(() => '');
+}
+
+async function analisarImagem(bytes, mime, rotulo, extra) {
+  const img = Object.assign({ rotulo, mime, tamanho: bytes.length, tiff: null, xmp: [], segmentos: [], comentarios: [], qualidade: null, componentes: null, cinza: null, largura: null, altura: null, textos: [] }, extra || {});
+  try {
+    if (mime === 'image/jpeg') { const j = lerJpeg(bytes); if (j) Object.assign(img, { tiff: j.tiff, xmp: j.xmp, segmentos: j.segmentos, comentarios: j.comentarios, qualidade: j.qualidade, componentes: j.componentes, largura: j.largura, altura: j.altura, progressivo: j.progressivo }); }
+    else if (mime === 'image/png') { const j = await lerPng(bytes); Object.assign(img, { tiff: j.tiff, xmp: j.xmp, textos: j.textos, largura: j.largura, altura: j.altura, pngQuando: j.quando }); if (j.tipoCor === 0 || j.tipoCor === 4) img.componentes = 1; }
+    else if (mime === 'image/webp') { const j = lerWebp(bytes); Object.assign(img, { tiff: j.tiff, xmp: j.xmp }); }
+  } catch (e) { img.erro = e.message; }
+  img.xmpLido = img.xmp.map(lerXmp);
+  img.miniaturaBytes = img.tiff && img.tiff.miniatura;
+  img.blob = new Blob([bytes], { type: mime }); img.url = URL.createObjectURL(img.blob);
+  await analisarPixels(img);
+  // campos resumidos
+  const t = img.tiff || { ifd0: {}, exif: {}, gps: {} }, x = img.xmpLido.reduce((a, r) => Object.assign(a, r.campos), {});
+  img.marca = t.ifd0.Make || x['tiff:Make'] || ''; img.modelo = t.ifd0.Model || x['tiff:Model'] || '';
+  img.software = t.ifd0.Software || x['tiff:Software'] || x['xmp:CreatorTool'] || '';
+  img.dOriginal = dataExif(t.exif.DateTimeOriginal, t.exif.OffsetTimeOriginal) || dataIso(x['exif:DateTimeOriginal']) || dataIso(x['photoshop:DateCreated']);
+  img.dDigital = dataExif(t.exif.DateTimeDigitized, t.exif.OffsetTimeDigitized);
+  img.dModif = dataExif(t.ifd0.DateTime, t.exif.OffsetTime) || dataIso(x['xmp:ModifyDate']);
+  img.gps = gpsDe(t.gps);
+  if (!img.gps && x['exif:GPSLatitude']) { const la = gpsXmp(x['exif:GPSLatitude']), lo = gpsXmp(x['exif:GPSLongitude']); if (la != null && lo != null) img.gps = { lat: la, lon: lo, metodo: x['exif:GPSProcessingMethod'] || '', quando: null }; }
+  img.serie = t.exif.BodySerialNumber || ''; img.idUnico = t.exif.ImageUniqueID || '';
+  img.historico = img.xmpLido.flatMap((r) => r.historico);
+  return img;
+}
+
+/* =================================================================== PDF */
+const BRANCO = { 0: 1, 9: 1, 10: 1, 12: 1, 13: 1, 32: 1 };
+function pular(s, i) { for (;;) { const c = s.charCodeAt(i); if (BRANCO[c]) { i++; continue; } if (c === 37) { while (i < s.length && s[i] !== '\n' && s[i] !== '\r') i++; continue; } return i; } }
+function lerNome(s, i) { let j = i + 1; while (j < s.length && !/[\s\/\[\]<>(){}%\0]/.test(s[j])) j++; return [s.slice(i + 1, j).replace(/#([0-9a-f]{2})/gi, (_, h) => String.fromCharCode(parseInt(h, 16))), j]; }
+const reNum = /[+\-]?(?:\d+\.?\d*|\.\d+)/y, reRef = /\s+(\d+)\s+R(?![A-Za-z])/y;
+function lerObj(s, i, prof) {
+  prof = prof || 0; i = pular(s, i); if (i >= s.length || prof > 60) return [null, i + 1];
+  const c = s[i];
+  if (c === '<' && s[i + 1] === '<') {
+    i += 2; const d = {};
+    for (;;) { i = pular(s, i); if (i >= s.length) return [{ t: 'dict', v: d }, i]; if (s[i] === '>' && s[i + 1] === '>') return [{ t: 'dict', v: d }, i + 2]; if (s[i] !== '/') { if (/^(stream|endobj)/.test(s.slice(i, i + 6))) return [{ t: 'dict', v: d }, i]; const [, j] = lerObj(s, i, prof + 1); i = j > i ? j : i + 1; continue; } const [k, j] = lerNome(s, i); const [v, j2] = lerObj(s, j, prof + 1); d[k] = v; i = j2; }
+  }
+  if (c === '<') { const f = s.indexOf('>', i); const hx = s.slice(i + 1, f < 0 ? s.length : f).replace(/[^0-9a-f]/gi, ''); const b = new Uint8Array(Math.ceil(hx.length / 2)); for (let k = 0; k < b.length; k++) b[k] = parseInt((hx.substr(k * 2, 2) + '0').slice(0, 2), 16); return [{ t: 'str', v: decTexto(b), hex: true }, f < 0 ? s.length : f + 1]; }
+  if (c === '(') {
+    let prof2 = 1, j = i + 1; const o = []; const MAP = { n: 10, r: 13, t: 9, b: 8, f: 12, '(': 40, ')': 41, '\\': 92 };
+    while (j < s.length) { const ch = s[j];
+      if (ch === '\\') { const n = s[j + 1]; if (n in MAP) { o.push(MAP[n]); j += 2; } else if (/[0-7]/.test(n)) { let oc = n, k = j + 2; while (oc.length < 3 && /[0-7]/.test(s[k])) { oc += s[k]; k++; } o.push(parseInt(oc, 8) & 255); j = k; } else if (n === '\r') { j += 2; if (s[j] === '\n') j++; } else if (n === '\n') j += 2; else { o.push(s.charCodeAt(j + 1) & 255); j += 2; } continue; }
+      if (ch === '(') prof2++; else if (ch === ')') { prof2--; if (!prof2) { j++; break; } }
+      o.push(s.charCodeAt(j) & 255); j++; }
+    return [{ t: 'str', v: decTexto(Uint8Array.from(o)) }, j];
+  }
+  if (c === '[') { i++; const a = []; for (;;) { i = pular(s, i); if (i >= s.length || s[i] === ']') return [{ t: 'arr', v: a }, i + 1]; if (/^(endobj|stream)/.test(s.slice(i, i + 6))) return [{ t: 'arr', v: a }, i]; const [v, j] = lerObj(s, i, prof + 1); a.push(v); i = j > i ? j : i + 1; } }
+  if (c === '/') { const [n, j] = lerNome(s, i); return [{ t: 'nome', v: n }, j]; }
+  reNum.lastIndex = i; const mn = reNum.exec(s);
+  if (mn) { const j = i + mn[0].length; if (/^\d+$/.test(mn[0])) { reRef.lastIndex = j; const mr = reRef.exec(s); if (mr) return [{ t: 'ref', v: +mn[0], g: +mr[1] }, reRef.lastIndex]; } return [parseFloat(mn[0]), j]; }
+  if (s.startsWith('true', i)) return [true, i + 4]; if (s.startsWith('false', i)) return [false, i + 5]; if (s.startsWith('null', i)) return [null, i + 4];
+  return [null, i + 1];
+}
+const nm = (v) => v && v.t === 'nome' ? v.v : undefined;
+const st = (v) => v == null ? '' : v.t === 'str' ? v.v : v.t === 'nome' ? v.v : typeof v === 'number' || typeof v === 'boolean' ? String(v) : v.t === 'ref' ? v.v + ' ' + v.g + ' R' : '';
+const dic = (o) => o && o.val && o.val.t === 'dict' ? o.val.v : null;
+function filtros(d) { const f = d && d.Filter; if (!f) return []; if (f.t === 'nome') return [f.v]; if (f.t === 'arr') return f.v.map(nm).filter(Boolean); return []; }
+function a85(b) {
+  let t = latin1(b).replace(/\s/g, ''); if (t.startsWith('<~')) t = t.slice(2); const e = t.indexOf('~>'); if (e >= 0) t = t.slice(0, e);
+  const out = []; let g = [];
+  const sai = (grp, n) => { let v = 0; for (const x of grp) v = v * 85 + x; out.push.apply(out, [v >>> 24 & 255, v >>> 16 & 255, v >>> 8 & 255, v & 255].slice(0, n)); };
+  for (const ch of t) { if (ch === 'z' && !g.length) { out.push(0, 0, 0, 0); continue; } const c = ch.charCodeAt(0) - 33; if (c < 0 || c > 84) continue; g.push(c); if (g.length === 5) { sai(g, 4); g = []; } }
+  if (g.length > 1) { const n = g.length; while (g.length < 5) g.push(84); sai(g, n - 1); }
+  return Uint8Array.from(out);
+}
+function ahx(b) { const t = latin1(b).replace(/>[\s\S]*$/, '').replace(/[^0-9a-f]/gi, ''); const o = new Uint8Array(Math.ceil(t.length / 2)); for (let i = 0; i < o.length; i++) o[i] = parseInt((t.substr(i * 2, 2) + '0').slice(0, 2), 16); return o; }
+// aplica os filtros em ordem; para no DCTDecode (devolve o JPEG)
+async function aplicarFiltros(raw, f) {
+  let b = raw;
+  for (const x of f) {
+    if (x === 'DCTDecode' || x === 'DCT') return b;
+    if (x === 'FlateDecode' || x === 'Fl') { b = await inflarZlib(b); if (!b) return null; }
+    else if (x === 'ASCII85Decode' || x === 'A85') b = a85(b);
+    else if (x === 'ASCIIHexDecode' || x === 'AHx') b = ahx(b);
+    else return null;
+  }
+  return b;
+}
+async function decodificar(item, o) {
+  const d = dic(o), raw = item.bytes.subarray(o.stream.ini, o.stream.fim), f = filtros(d);
+  if (!f.length) return raw;
+  if (f.length > 1 || !(f[0] === 'FlateDecode' || f[0] === 'Fl')) return await aplicarFiltros(raw, f);
+  {
+    const parms = d.DecodeParms && d.DecodeParms.t === 'dict' ? d.DecodeParms.v : null;
+    const out = await inflarZlib(raw); if (!out) return null;
+    const pred = parms && typeof parms.Predictor === 'number' ? parms.Predictor : 1;
+    if (pred >= 10) { const col = typeof parms.Columns === 'number' ? parms.Columns : 1, lw = col + 1, linhas = Math.floor(out.length / lw), r = new Uint8Array(linhas * col); let ant = new Uint8Array(col);
+      for (let y = 0; y < linhas; y++) { const tp = out[y * lw], cur = r.subarray(y * col, y * col + col); for (let x = 0; x < col; x++) { const v = out[y * lw + 1 + x], a = 0; cur[x] = tp === 2 ? (v + ant[x]) & 255 : tp === 1 ? (v + (x ? cur[x - 1] : 0)) & 255 : v; } ant = cur; } return r; }
+    return out;
+  }
+  return null;
+}
+const RE_AUTOMATICO = /itext|aspose|jasper|wkhtmltopdf|pdfsharp|migradoc|reportlab|fpdf|tcpdf|dompdf|mpdf|pdfkit|puppeteer|headless|chromium|skia\/pdf|qt\s?\d|prince|openhtmltopdf|flying ?saucer|pdflib|pdfbox|apache fop|\bfop\b|birt|crystal reports|telerik|syncfusion|devexpress|gembox|spire\.pdf|ironpdf|pdftron|apryse|uipath|automation anywhere|blue ?prism|power automate|docusign|clicksign|unico|acesso digital|idwall|d4sign|zapsign|docuware|ghostscript|quartz pdfcontext|pdf\.js|xhtml2pdf|weasyprint|pdfmake|jspdf|gotenberg/i;
+const RE_EDICAO = /acrobat(?!\s*distiller)|pdfelement|wondershare|foxit|nitro|ilovepdf|smallpdf|sejda|pdf24|pdfescape|pdf-xchange|pdffiller|canva|photoshop|illustrator|inkscape|libreoffice|openoffice|microsoft.{0,15}word|\bword\b|wps|google docs|camscanner|adobe scan|pdf editor|editor de pdf|gimp|paint\.net|picsart|snapseed/i;
+const RE_EDITOR_FOTO = /photoshop|lightroom|gimp|snapseed|picsart|canva|meitu|faceapp|facetune|remini|fotor|pixlr|paint\.net|affinity|luminar|airbrush|beautyplus|youcam|vsco|photoroom|remove\.bg|stable diffusion|midjourney|dall|firefly|generative/i;
+const RE_EMULADOR = /sdk_gphone|android sdk built|\bemulator\b|emulador|genymotion|bluestacks|\bnox\b|ldplayer|vbox86|generic_x86|generic x86|memu|mumu|andy os|virtualbox|vmware|\bgoldfish\b|ranchu|waydroid|anbox/i;
+
+async function analisarPdf(item) {
+  const b = item.bytes, s = latin1(b), P = item.pdf = { versao: (/%PDF-(\d\.\d)/.exec(s.slice(0, 1024)) || [])[1] || '?', revisoes: [], infos: [], xmps: [], assinaturas: [], paginas: 0, fontes: [], imagens: 0, texto: '', linearizado: false, eofs: [], extras: [] };
+  let k = -1; while ((k = s.indexOf('%%EOF', k + 1)) !== -1) P.eofs.push(k);
+  const revDe = (pos) => { let n = 0; for (const e of P.eofs) if (pos > e) n++; return n; };
+  const objs = [], re = /(\d+)\s+(\d+)\s+obj\b/g; let m;
+  while ((m = re.exec(s))) {
+    const ini = m.index + m[0].length; let [val, j] = lerObj(s, ini); let stream = null; const p = pular(s, j);
+    if (s.startsWith('stream', p)) {
+      let d0 = p + 6; if (s[d0] === '\r') d0++; if (s[d0] === '\n') d0++;
+      const d = val && val.t === 'dict' ? val.v : {}; let fim = -1;
+      if (typeof d.Length === 'number' && d0 + d.Length <= s.length && s.startsWith('endstream', pular(s, d0 + d.Length))) fim = d0 + d.Length;
+      else { fim = s.indexOf('endstream', d0); if (fim < 0) fim = s.length; if (s[fim - 1] === '\n') fim--; if (s[fim - 1] === '\r') fim--; }
+      stream = { ini: d0, fim }; const e = s.indexOf('endstream', fim); j = e < 0 ? s.length : e + 9;
+    }
+    const eo = s.indexOf('endobj', j); re.lastIndex = eo >= 0 && eo - j < 400 ? eo + 6 : Math.max(j, re.lastIndex);
+    objs.push({ num: +m[1], gen: +m[2], pos: m.index, rev: revDe(m.index), val, stream });
+  }
+  // objetos dentro de "object streams"
+  for (const o of objs.slice()) {
+    const d = dic(o); if (!d || nm(d.Type) !== 'ObjStm' || !o.stream) continue;
+    const dd = await decodificar(item, o); if (!dd) continue; const ds = latin1(dd), N = d.N | 0, F = d.First | 0;
+    const nums = ds.slice(0, F).trim().split(/\s+/).map(Number);
+    for (let i = 0; i < N && i * 2 + 1 < nums.length; i++) { const [v] = lerObj(ds, F + nums[i * 2 + 1]); objs.push({ num: nums[i * 2], gen: 0, pos: o.pos, rev: o.rev, val: v, stream: null, emStm: true }); }
+  }
+  P.objs = objs;
+  if (objs.length && dic(objs[0]) && dic(objs[0]).Linearized != null) P.linearizado = true;
+  P.salvamentos = Math.max(1, P.eofs.length - (P.linearizado && P.eofs.length > 1 ? 1 : 0));
+  // revisões (onde cada salvamento termina)
+  P.eofs.forEach((e, i) => { let f = e + 5; if (s[f] === '\r') f++; if (s[f] === '\n') f++; P.revisoes.push({ n: i + 1, fim: f }); });
+  // dicionário Info
+  const refsInfo = new Set(); const ri = /\/Info\s+(\d+)\s+\d+\s+R/g; while ((m = ri.exec(s))) refsInfo.add(+m[1]);
+  for (const o of objs) {
+    const d = dic(o); if (!d) continue;
+    if (d.ByteRange && d.ByteRange.t === 'arr') {
+      const br = d.ByteRange.v.map(Number); P.assinaturas.push({ rev: o.rev, quando: dataPdf(st(d.M)), nome: st(d.Name), motivo: st(d.Reason), local: st(d.Location), contato: st(d.ContactInfo), tipo: nm(d.SubFilter) || nm(d.Filter) || '', cobreAte: br.length === 4 ? br[2] + br[3] : null });
+      continue;
+    }
+    const ehInfo = refsInfo.has(o.num) || (!d.Type && !d.Subtype && !d.Kids && (d.Producer || d.CreationDate || d.Creator || d.ModDate));
+    if (ehInfo && (d.Producer || d.CreationDate || d.Creator || d.ModDate || d.Author || d.Title)) {
+      const campos = {}; Object.keys(d).forEach((key) => { const v = st(d[key]); if (v) campos[key] = v; });
+      const ja = P.infos.find((x) => JSON.stringify(x.campos) === JSON.stringify(campos)); if (!ja) P.infos.push({ rev: o.rev, num: o.num, campos });
+    }
+    const tipo = nm(d.Type), sub = nm(d.Subtype);
+    if (tipo === 'Page') P.paginas++;
+    if (d.BaseFont) { const f = st(d.BaseFont).replace(/^[A-Z]{6}\+/, ''); if (f && !P.fontes.includes(f)) P.fontes.push(f); }
+    if (d.EmbeddedFiles || tipo === 'EmbeddedFile') P.extras.push('Tem arquivo anexado dentro do PDF');
+    if (d.JS || nm(d.S) === 'JavaScript') P.extras.push('Tem código JavaScript dentro do PDF');
+  }
+  P.infos.sort((a, b2) => a.rev - b2.rev);
+  // XMP
+  const cat = objs.find((o) => dic(o) && nm(dic(o).Type) === 'Catalog'); const metaCat = cat && dic(cat).Metadata && dic(cat).Metadata.t === 'ref' ? dic(cat).Metadata.v : null;
+  for (const o of objs) {
+    const d = dic(o); if (!d || !o.stream) continue;
+    if (nm(d.Type) === 'Metadata' || nm(d.Subtype) === 'XML') { const dd = await decodificar(item, o); if (!dd) continue; const txt = utf8(dd); if (!/xmpmeta|rdf:RDF/.test(txt)) continue; P.xmps.push(Object.assign(lerXmp(txt), { rev: o.rev, doDocumento: o.num === metaCat || metaCat == null })); }
+  }
+  // imagens embutidas
+  let nImg = 0;
+  for (const o of objs) {
+    const d = dic(o); if (!d || !o.stream || nm(d.Subtype) !== 'Image') continue; P.imagens++;
+    const f = filtros(d), largura = d.Width, altura = d.Height; let cs = nm(d.ColorSpace); if (!cs && d.ColorSpace && d.ColorSpace.t === 'arr') cs = nm(d.ColorSpace.v[0]);
+    if (f[f.length - 1] !== 'DCTDecode' || nImg >= 40) continue;
+    const jb = f.length === 1 ? b.subarray(o.stream.ini, o.stream.fim) : await aplicarFiltros(b.subarray(o.stream.ini, o.stream.fim), f);
+    if (!jb || jb.length < 1500) continue;
+    nImg++;
+    const img = await analisarImagem(jb.slice(), 'image/jpeg', 'Imagem ' + nImg + ' dentro do PDF', { pdfObj: o.num, pdfCor: cs || '', pdfRev: o.rev, pdfTam: (largura || '?') + '×' + (altura || '?') });
+    item.imagens.push(img);
+  }
+  // texto (para achar coordenadas e IP)
+  const conteudos = new Set();
+  for (const o of objs) { const d = dic(o); if (!d || nm(d.Type) !== 'Page' || !d.Contents) continue; if (d.Contents.t === 'ref') conteudos.add(d.Contents.v); if (d.Contents.t === 'arr') d.Contents.v.forEach((r) => r && r.t === 'ref' && conteudos.add(r.v)); }
+  const partes = []; let total = 0;
+  for (const o of objs) {
+    if (!o.stream || !conteudos.has(o.num) || total > 3e6) continue;
+    const dd = await decodificar(item, o); if (!dd) continue; const cs2 = latin1(dd); total += cs2.length;
+    const blocos = cs2.split(/\bET\b/);
+    for (const bl of blocos) { const strs = []; let i = bl.indexOf('BT'); if (i < 0) continue; for (;;) { const a = bl.indexOf('(', i); if (a < 0) break; const [v, j] = lerObj(bl, a); if (v && v.t === 'str') strs.push(v.v); i = j; } if (strs.length) partes.push(strs.join('')); }
+  }
+  P.texto = partes.join('\n');
+  // resumo
+  const ult = P.infos[P.infos.length - 1], prim = P.infos[0];
+  P.producer = ult ? ult.campos.Producer || '' : ''; P.creator = ult ? ult.campos.Creator || '' : '';
+  const xd = (P.xmps.find((x) => x.doDocumento) || P.xmps[0] || { campos: {} }).campos;
+  P.xmpCampos = xd;
+  P.dCriacao = (prim && dataPdf(prim.campos.CreationDate)) || dataIso(xd['xmp:CreateDate']);
+  P.dModif = (ult && dataPdf(ult.campos.ModDate)) || dataIso(xd['xmp:ModifyDate']);
+}
+
+/* ================================================================ Office */
+async function analisarOffice(item) {
+  const b = item.bytes, dv = new DataView(b.buffer, b.byteOffset, b.byteLength); let e = -1;
+  for (let i = b.length - 22; i >= Math.max(0, b.length - 70000); i--) if (dv.getUint32(i, true) === 0x06054b50) { e = i; break; }
+  if (e < 0) throw new Error('arquivo compactado danificado');
+  const n = dv.getUint16(e + 10, true); let p = dv.getUint32(e + 16, true); const ents = [];
+  for (let i = 0; i < n && p + 46 <= b.length; i++) { if (dv.getUint32(p, true) !== 0x02014b50) break; const nl = dv.getUint16(p + 28, true), xl = dv.getUint16(p + 30, true), cl = dv.getUint16(p + 32, true); const t = dv.getUint16(p + 12, true), d = dv.getUint16(p + 14, true);
+    ents.push({ nome: utf8(b.subarray(p + 46, p + 46 + nl)), metodo: dv.getUint16(p + 10, true), csize: dv.getUint32(p + 20, true), lh: dv.getUint32(p + 42, true), quando: mkData((d >> 9) + 1980, (d >> 5) & 15, d & 31, t >> 11, (t >> 5) & 63, (t & 31) * 2, null) }); p += 46 + nl + xl + cl; }
+  const ler = async (en) => { const nl = dv.getUint16(en.lh + 26, true), xl = dv.getUint16(en.lh + 28, true), ini = en.lh + 30 + nl + xl, raw = b.subarray(ini, ini + en.csize); return en.metodo === 0 ? raw : en.metodo === 8 ? await inflar(raw, 'deflate-raw') : null; };
+  const O = item.office = { campos: {}, entradas: ents.length, programa: '' };
+  const tag = (xml, k) => { const mm = new RegExp('<' + k + '(?:\\s[^>]*)?>([\\s\\S]*?)</' + k + '>').exec(xml); return mm ? desEnt(mm[1].trim()) : ''; };
+  const core = ents.find((x) => x.nome === 'docProps/core.xml'), app = ents.find((x) => x.nome === 'docProps/app.xml'), meta = ents.find((x) => x.nome === 'meta.xml');
+  if (core) { const x = utf8(await ler(core)); ['dc:title', 'dc:creator', 'cp:lastModifiedBy', 'dcterms:created', 'dcterms:modified', 'cp:revision', 'cp:lastPrinted', 'dc:description'].forEach((k) => { const v = tag(x, k); if (v) O.campos[k] = v; }); }
+  if (app) { const x = utf8(await ler(app)); ['Application', 'AppVersion', 'Company', 'TotalTime', 'Template', 'Pages', 'Words'].forEach((k) => { const v = tag(x, k); if (v) O.campos[k] = v; }); }
+  if (meta) { const x = utf8(await ler(meta)); ['meta:generator', 'meta:initial-creator', 'dc:creator', 'meta:creation-date', 'dc:date', 'meta:editing-cycles', 'meta:editing-duration'].forEach((k) => { const v = tag(x, k); if (v) O.campos[k] = v; }); }
+  O.programa = O.campos.Application ? O.campos.Application + (O.campos.AppVersion ? ' ' + O.campos.AppVersion : '') : O.campos['meta:generator'] || '';
+  O.dCriacao = dataIso(O.campos['dcterms:created'] || O.campos['meta:creation-date']); O.dModif = dataIso(O.campos['dcterms:modified'] || O.campos['dc:date']);
+  let nImg = 0;
+  for (const en of ents) { if (!/\.(jpe?g|png)$/i.test(en.nome) || !/media|Pictures/i.test(en.nome) || nImg >= 30) continue; const d = await ler(en); if (!d) continue; nImg++; item.imagens.push(await analisarImagem(d.slice(), /png$/i.test(en.nome) ? 'image/png' : 'image/jpeg', 'Imagem ' + nImg + ' dentro do documento (' + en.nome.split('/').pop() + ')', {})); }
+}
+
+/* ================================================================ arquivos */
+function detectarTipo(b, nome) {
+  const ini = latin1(b.subarray(0, 1024));
+  if (ini.includes('%PDF-')) return 'pdf';
+  if (b[0] === 0xFF && b[1] === 0xD8 && b[2] === 0xFF) return 'jpeg';
+  if (b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4E && b[3] === 0x47) return 'png';
+  if (ini.startsWith('RIFF') && ini.slice(8, 12) === 'WEBP') return 'webp';
+  if (b[0] === 0x50 && b[1] === 0x4B && b[2] === 3 && b[3] === 4) return 'zip';
+  if (/ftyp(heic|heix|mif1|msf1|hevc)/.test(ini.slice(0, 32))) return 'heic';
+  if (b[0] === 0xD0 && b[1] === 0xCF && b[2] === 0x11 && b[3] === 0xE0) return 'ole';
+  return 'desconhecido';
+}
+const NOME_TIPO = { pdf: 'PDF', jpeg: 'Foto JPEG', png: 'Imagem PNG', webp: 'Imagem WEBP', zip: 'Documento Office', heic: 'Foto HEIC (iPhone)', ole: 'Documento antigo do Word/Excel', desconhecido: 'Tipo não reconhecido' };
+async function analisarArquivo(nome, bytes) {
+  const item = { id: ++seq, nome, tamanho: bytes.length, bytes, hash: '', tipo: '', imagens: [], erro: '' };
+  status('Lendo ' + nome + '…');
+  item.hash = await sha256(bytes);
+  try {
+    item.tipo = detectarTipo(bytes, nome);
+    if (item.tipo === 'pdf') await analisarPdf(item);
+    else if (item.tipo === 'jpeg' || item.tipo === 'png' || item.tipo === 'webp') item.imagens.push(await analisarImagem(bytes, 'image/' + item.tipo, 'A foto', { principal: true }));
+    else if (item.tipo === 'zip') await analisarOffice(item);
+    else if (item.tipo === 'heic') item.erro = 'Foto de iPhone (HEIC). Os dados existem, mas o navegador não abre esse formato. Peça a foto original em JPG, ou use o ExifTool (veja o relatório).';
+    else if (item.tipo === 'ole') item.erro = 'Formato antigo (.doc/.xls). Salve como .docx ou PDF e analise de novo, ou use o ExifTool.';
+    else item.erro = 'Não reconheci este tipo de arquivo.';
+  } catch (e) { item.erro = 'Não consegui ler tudo deste arquivo (' + e.message + '). O que foi lido aparece abaixo.'; }
+  estado.arquivos.push(item);
+}
+function status(t) { $('#status').textContent = t; }
+async function adicionar(lista) {
+  const fs = Array.from(lista || []); if (!fs.length) return;
+  if (estado.exemplo) limpar();
+  for (const f of fs) { try { await analisarArquivo(f.name, new Uint8Array(await f.arrayBuffer())); } catch (e) { status('Erro em ' + f.name + ': ' + e.message); } }
+  status(estado.arquivos.length + ' arquivo(s) analisado(s).');
+  recalcular();
+}
+function limpar() {
+  estado.arquivos.forEach((a) => a.imagens.forEach((i) => { try { URL.revokeObjectURL(i.url); } catch (e) {} }));
+  estado.arquivos = []; estado.exemplo = false; status(''); recalcular();
+}
+
+/* ========================================================= alertas e tempo */
+function recalcular() {
+  const A = [], E = [], cli = coordCliente();
+  const al = (nivel, titulo, detalhe, porque, onde) => A.push({ nivel, titulo, detalhe, porque, onde });
+  const ev = (q, rotulo, onde, tipo) => { if (q && q.d && !isNaN(q.d)) E.push({ q, rotulo, onde, tipo: tipo || '' }); };
+  const contrato = (() => { const v = $('#cContrato').value; if (!v) return null; const [y, mo, d] = v.split('-'); const r = mkData(y, mo, d, 0, 0, 0, -180); if (r) r.mostrar = p2(d) + '/' + p2(mo) + '/' + y; return r; })();
+  const prova = (() => { const v = $('#cProva').value; if (!v) return null; const mm = /(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(v); return mm ? mkData(mm[1], mm[2], mm[3], mm[4], mm[5], 0, -180) : null; })();
+  if (contrato) ev(contrato, 'Data do contrato (informada por você)', 'Dados do caso', 'caso');
+  if (prova) ev(prova, 'Prova de vida / assinatura alegada (informada por você)', 'Dados do caso', 'caso');
+  const todasImgs = [];
+  const coords = [], ips = [];
+  const addCoord = (c, origem) => { c.origem = origem; if (cli) c.dist = distKm(cli, c); coords.push(c); };
+
+  for (const it of estado.arquivos) {
+    const N = it.nome;
+    if (it.erro) al('info', 'Leitura incompleta', it.erro, '', N);
+    if (it.pdf) {
+      const P = it.pdf;
+      if (!P.infos.length && !P.xmps.length) al('medio', 'PDF sem nenhum dado interno', 'O arquivo não informa programa, autor nem datas.', 'Programas comuns sempre gravam esses dados. Quando não há nada, eles foram apagados de propósito ou o arquivo foi "limpo" antes de ser juntado.', N);
+      P.infos.forEach((inf) => { ev(dataPdf(inf.campos.CreationDate), 'PDF criado' + (P.salvamentos > 1 ? ' (salvamento ' + (inf.rev + 1) + ')' : ''), N); ev(dataPdf(inf.campos.ModDate), 'PDF modificado' + (P.salvamentos > 1 ? ' (salvamento ' + (inf.rev + 1) + ')' : ''), N); });
+      P.xmps.forEach((x) => { ev(dataIso(x.campos['xmp:CreateDate']), 'Criação segundo o XMP', N); ev(dataIso(x.campos['xmp:ModifyDate']), 'Modificação segundo o XMP', N); ev(dataIso(x.campos['xmp:MetadataDate']), 'Metadados alterados (XMP)', N); x.historico.forEach((h) => ev(dataIso(h.quando), 'Histórico: ' + (h.acao || 'ação') + (h.programa ? ' com ' + h.programa : ''), N)); });
+      P.assinaturas.forEach((a) => ev(a.quando, 'Assinatura digital' + (a.nome ? ' de ' + a.nome : ''), N));
+      if (P.dCriacao && P.dModif) {
+        const dif = P.dModif.d - P.dCriacao.d;
+        if (dif < -60000) al('alto', 'Modificação ANTES da criação', 'Criado em ' + P.dCriacao.mostrar + ', modificado em ' + P.dModif.mostrar + '.', 'Num arquivo íntegro a modificação nunca vem antes da criação. Isso indica relógio alterado ou datas editadas à mão.', N);
+        else if (dif > 60000) al('medio', 'Documento modificado depois de criado', 'Criado em ' + P.dCriacao.mostrar + ' e modificado em ' + P.dModif.mostrar + ': ' + difTxt(dif) + ' depois.', 'O documento não é o mesmo que foi gerado no primeiro momento. Peça a versão original e a explicação do que mudou.', N);
+      }
+      if (P.salvamentos > 1) al('medio', 'O PDF foi salvo ' + P.salvamentos + ' vezes', 'Cada salvamento acrescentou conteúdo no fim do arquivo. As versões anteriores continuam dentro dele' + (EMBUTIDO ? '.' : ' e podem ser recuperadas no botão "Recuperar versão" abaixo.'), 'Mostra que o documento foi alterado depois de pronto. A versão anterior pode revelar o que foi trocado.', N);
+      for (let i = 1; i < P.infos.length; i++) { const a = P.infos[i - 1].campos, b2 = P.infos[i].campos; ['Producer', 'Creator', 'Author', 'CreationDate'].forEach((k) => { if (a[k] && b2[k] && a[k] !== b2[k]) al(k === 'CreationDate' ? 'alto' : 'medio', 'Dado interno trocado entre salvamentos: ' + k, 'Antes: "' + a[k] + '". Depois: "' + b2[k] + '".', k === 'CreationDate' ? 'A data de criação não deveria mudar nunca. Se mudou, alguém reescreveu a data.' : 'O documento passou por outro programa depois de gerado.', N); }); }
+      const ult = P.infos[P.infos.length - 1], xd = P.xmpCampos || {};
+      if (ult && xd['pdf:Producer'] && ult.campos.Producer && xd['pdf:Producer'] !== ult.campos.Producer) al('medio', 'Os dados internos se contradizem (programa)', 'Info diz "' + ult.campos.Producer + '"; XMP diz "' + xd['pdf:Producer'] + '".', 'O PDF guarda o programa em dois lugares. Quando não batem, o arquivo foi mexido por um programa que atualizou só um deles.', N);
+      const cmp = (a, b2, nome) => { if (a && b2 && Math.abs(a.d - b2.d) > 120000) al('medio', 'Os dados internos se contradizem (' + nome + ')', 'Info: ' + a.mostrar + '. XMP: ' + b2.mostrar + '.', 'As duas cópias da mesma data deveriam ser iguais.', N); };
+      if (ult) { cmp(dataPdf(P.infos[0].campos.CreationDate), dataIso(xd['xmp:CreateDate']), 'data de criação'); cmp(dataPdf(ult.campos.ModDate), dataIso(xd['xmp:ModifyDate']), 'data de modificação'); }
+      const progs = [P.producer, P.creator, xd['xmp:CreatorTool'], xd['pdf:Producer']].filter(Boolean);
+      const auto = progs.find((x) => RE_AUTOMATICO.test(x)), edit = progs.find((x) => RE_EDICAO.test(x));
+      if (edit) al(/word|wps|libreoffice|openoffice|google docs/i.test(edit) ? 'medio' : 'info', 'Feito ou passado por programa de edição: ' + edit, /word|wps|libreoffice|openoffice|google docs/i.test(edit) ? 'O documento foi digitado num editor de texto, não gerado pelo sistema que registrou a biometria/assinatura.' : 'O arquivo passou por um programa que permite editar PDF.', 'Um laudo ou "dossiê de formalização" digitado ou editado à mão não é registro automático do sistema. Peça o registro original (log) gerado na hora.', N);
+      if (auto) al('info', 'Gerado por sistema automático: ' + auto, 'Esse tipo de programa monta documentos a partir de dados de um banco de dados (às vezes por robôs, RPA).', 'Não é ilegal, mas mostra que o papel foi montado depois, por sistema. As datas e a localização impressas nele vêm do banco de dados do réu, e não de um registro independente.', N);
+      if (P.assinaturas.length) {
+        P.assinaturas.forEach((a) => al('info', 'Assinatura digital encontrada' + (a.nome ? ': ' + a.nome : ''), [a.quando ? 'Data: ' + a.quando.mostrar : '', a.motivo ? 'Motivo: ' + a.motivo : '', a.local ? 'Local: ' + a.local : '', a.tipo ? 'Padrão: ' + a.tipo : ''].filter(Boolean).join(' · '), 'Confira a validade no validador oficial do ITI: validar.iti.gov.br', N));
+        const cobre = Math.max.apply(null, P.assinaturas.map((a) => a.cobreAte || 0));
+        if (cobre) { let resto = it.bytes.length - cobre; const cauda = latin1(it.bytes.subarray(cobre)).replace(/\s+/g, ''); if (resto > 0 && cauda.length > 8) al('medio', 'Houve conteúdo acrescentado DEPOIS da assinatura digital', (resto) + ' bytes foram adicionados depois da última assinatura.', 'Às vezes é só um carimbo de tempo, mas também pode ser alteração. O validador do ITI (validar.iti.gov.br) diz se a assinatura ainda vale para o documento todo.', N); }
+      } else al('info', 'Sem assinatura digital', 'Não encontrei assinatura digital (ICP-Brasil ou outra) dentro do PDF.', 'Se o banco alega "assinatura eletrônica", o PDF não carrega prova técnica dela. Peça o log de auditoria original.', N);
+      P.extras.filter((x, i, a) => a.indexOf(x) === i).forEach((x) => al('info', x, '', 'Vale abrir e conferir o conteúdo extra.', N));
+      acharCoordenadas(P.texto).forEach((c) => addCoord(c, 'texto do PDF ' + N));
+      acharIps(P.texto).forEach((ip) => ips.push({ ip, origem: 'texto do PDF ' + N }));
+    }
+    if (it.office) {
+      const O = it.office, c = O.campos;
+      ev(O.dCriacao, 'Documento criado', N); ev(O.dModif, 'Documento modificado', N);
+      if (O.dCriacao && O.dModif && O.dModif.d - O.dCriacao.d > 60000) al('medio', 'Documento modificado depois de criado', 'Criado em ' + O.dCriacao.mostrar + ', modificado em ' + O.dModif.mostrar + ' (' + difTxt(O.dModif.d - O.dCriacao.d) + ' depois).', 'O texto foi mexido depois da primeira versão.', N);
+      if (c['dc:creator'] && c['cp:lastModifiedBy'] && c['dc:creator'] !== c['cp:lastModifiedBy']) al('medio', 'Editado por outra pessoa', 'Criado por "' + c['dc:creator'] + '"; última alteração por "' + c['cp:lastModifiedBy'] + '".', 'Mostra quem mexeu no documento por último.', N);
+      if (c.Template && !/^normal(\.dotm?)?$/i.test(c.Template)) al('info', 'Feito a partir de modelo: ' + c.Template, '', 'Documento preenchido em modelo pronto.', N);
+    }
+    it.imagens.forEach((img) => { img.arquivo = N; todasImgs.push(img); });
+  }
+  // imagens
+  for (const img of todasImgs) {
+    const N = img.arquivo + (img.principal ? '' : ' › ' + img.rotulo), t = img.tiff;
+    ev(img.dOriginal, 'Foto tirada', N); ev(img.dDigital && img.dOriginal && Math.abs(img.dDigital.d - img.dOriginal.d) > 60000 ? img.dDigital : null, 'Foto digitalizada', N); ev(img.dModif, 'Foto salva/modificada', N);
+    if (img.gps && img.gps.quando) ev(img.gps.quando, 'Horário do GPS (satélite, UTC)', N);
+    img.historico.forEach((h) => ev(dataIso(h.quando), 'Histórico da foto: ' + (h.acao || 'ação') + (h.programa ? ' com ' + h.programa : ''), N));
+    const progs = [img.software].concat(img.historico.map((h) => h.programa)).concat(img.segmentos.filter((s) => /Photoshop|Ducky/.test(s))).filter(Boolean);
+    const ed = progs.find((x) => RE_EDITOR_FOTO.test(x) || /Photoshop|Ducky/.test(x));
+    if (ed) al('alto', 'Foto passou por programa de edição', 'Marca encontrada: "' + ed + '".', 'Câmera de celular não grava nome de editor. Se aparece, a foto foi aberta e salva num programa de edição.', N);
+    const aparelho = [img.marca, img.modelo, img.software].join(' ');
+    if (RE_EMULADOR.test(aparelho)) al('alto', 'Aparelho virtual (emulador)', 'Aparelho registrado: "' + aparelho.trim() + '".', 'Emulador é um "celular de mentira" rodando num computador. Permite enviar foto pronta como se fosse da câmera.', N);
+    if (img.dOriginal && img.dModif && Math.abs(img.dModif.d - img.dOriginal.d) > 60000) al('medio', 'Foto salva de novo depois de tirada', 'Tirada em ' + img.dOriginal.mostrar + '; salva em ' + img.dModif.mostrar + ' (' + difTxt(img.dModif.d - img.dOriginal.d) + (img.dModif.d < img.dOriginal.d ? ' antes' : ' depois') + ').', 'A câmera grava as duas datas iguais. Diferença indica que a foto foi reaberta e salva.', N);
+    if (img.gps && img.gps.quando && img.dOriginal && !img.dOriginal.semFuso && Math.abs(img.gps.quando.d - img.dOriginal.d) > 86400000) al('medio', 'Data do GPS diferente da data da foto', 'GPS: ' + img.gps.quando.mostrar + '; foto: ' + img.dOriginal.mostrar + '.', 'A localização pode ter sido registrada em outro dia.', N);
+    if (img.miniaturaDif != null && img.miniaturaDif > 22) al('alto', 'A miniatura escondida é diferente da foto', 'Diferença média de ' + img.miniaturaDif.toFixed(0) + ' (de 0 a 255). Compare as duas imagens no cartão da foto.', 'A câmera grava uma miniatura igual à foto. Se a foto foi editada e a miniatura não, ela mostra como era antes.', N);
+    if (img.cinza || img.componentes === 1 || /Gray/i.test(img.pdfCor || '')) al('medio', 'Foto em preto e branco', (img.pdfCor ? 'Espaço de cor no PDF: ' + img.pdfCor + '. ' : '') + 'A imagem não tem cor.', 'Câmera de celular tira foto colorida. Converter para preto e branco apaga informação de cor e luz, que ajuda a mostrar montagem. Peça a foto original colorida.', N);
+    if (!t && img.mime === 'image/jpeg' && !img.xmp.length) al('info', 'Foto sem dados da câmera (EXIF)', 'Não há aparelho, data nem localização gravados.', 'Os dados foram apagados ou a imagem foi reprocessada por sistema. Peça o arquivo original, tirado pela câmera.', N);
+    if (img.gps) {
+      const c = { lat: img.gps.lat, lon: img.gps.lon, como: 'GPS da foto' }; addCoord(c, 'GPS da foto ' + N);
+      if (/network|cell|wlan|wifi|wi-fi/i.test(img.gps.metodo)) al('medio', 'Localização por rede, não por satélite', 'Método gravado: "' + img.gps.metodo + '".', 'Localização por rede (antena ou Wi-Fi) é aproximada e pode errar por quilômetros. Não prova onde a pessoa estava.', N);
+    }
+    if (img.serie) al('info', 'Número de série do aparelho: ' + img.serie, '', 'Permite pedir que o réu identifique o aparelho.', N);
+  }
+  // aparelhos diferentes
+  const aps = todasImgs.filter((i) => i.modelo || i.software).map((i) => ({ k: (i.marca + ' ' + i.modelo).trim(), sw: i.software, onde: i.arquivo + ' › ' + i.rotulo }));
+  const modelos = [...new Set(aps.map((a) => a.k).filter(Boolean))];
+  if (modelos.length > 1) al('medio', 'Fotos de aparelhos diferentes', modelos.map((m) => '"' + m + '"').join(', ') + '.', 'Se o banco diz que tudo foi feito num só atendimento, no celular do cliente, todas as fotos deveriam ser do mesmo aparelho.', 'Comparação entre arquivos');
+  modelos.forEach((m) => { const sws = [...new Set(aps.filter((a) => a.k === m && a.sw).map((a) => a.sw))]; if (sws.length > 1) al('medio', 'Mesmo aparelho com versões de sistema diferentes', m + ': ' + sws.map((x) => '"' + x + '"').join(' e ') + '.', 'Um mesmo celular não troca de versão no meio de um atendimento. Indica fotos de momentos diferentes ou de aparelhos diferentes com o mesmo nome.', 'Comparação entre arquivos'); });
+  // texto digitado pelo usuário
+  const txt = $('#cTexto').value; acharCoordenadas(txt, true).forEach((c) => addCoord(c, 'texto do laudo (digitado)')); acharIps(txt).forEach((ip) => ips.push({ ip, origem: 'texto do laudo (digitado)' }));
+  coords.forEach((c) => { if (c.dist != null && c.dist > 1.5) al(c.dist > 5 ? 'alto' : 'medio', 'Localização a ' + kmTxt(c.dist) + ' da casa do cliente', 'Coordenada ' + coordTxt(c) + ' (' + c.origem + ').', 'Se o banco afirma que o cliente fez tudo em casa, a localização teria que bater com o endereço. Localização por IP ou antena aponta o equipamento da operadora, muitas vezes em outra cidade, e não prova onde a pessoa estava.', c.origem); });
+  if (ips.length) al('info', 'Endereço(s) IP: ' + [...new Set(ips.map((i) => i.ip))].join(', '), '', 'O IP identifica a operadora de internet, não a casa. Para saber quem usava aquele IP, o juízo pode oficiar a operadora (Marco Civil da Internet, art. 22) informando IP, data, hora com fuso e porta lógica.', ips[0].origem);
+  // datas do caso
+  if (contrato || prova) {
+    const ref = prova || contrato;
+    todasImgs.forEach((img) => { if (img.dOriginal && Math.abs(img.dOriginal.d - ref.d) > 86400000 * 1.5) al('alto', 'Foto tirada em data diferente da ' + (prova ? 'prova de vida' : 'data do contrato'), 'Foto: ' + img.dOriginal.mostrar + '. Informado: ' + ref.mostrar + ' (' + difTxt(img.dOriginal.d - ref.d) + (img.dOriginal.d < ref.d ? ' antes' : ' depois') + ').', 'A selfie deveria ser do momento da contratação. Data diferente indica foto reaproveitada.', img.arquivo + ' › ' + img.rotulo); });
+    if (contrato) estado.arquivos.forEach((it) => { const d = it.pdf ? it.pdf.dCriacao : it.office ? it.office.dCriacao : null; if (d && d.d - contrato.d > 86400000 * 30) al('medio', 'Documento produzido ' + difTxt(d.d - contrato.d) + ' depois do contrato', 'Criado em ' + d.mostrar + '; contrato em ' + contrato.mostrar + '.', 'Se o banco apresenta como registro do momento da contratação, ele foi feito depois, provavelmente para o processo.', it.nome); });
+  }
+  const ordem = { alto: 0, medio: 1, info: 2 };
+  A.sort((a, b2) => ordem[a.nivel] - ordem[b2.nivel]);
+  E.sort((a, b2) => a.q.d - b2.q.d);
+  estado.alertas = A; estado.eventos = E; estado.coordsAchadas = coords; estado.ips = ips; estado.contrato = contrato; estado.prova = prova; estado.cliente = cli;
+  render();
+}
+
+/* ================================================================= render */
+const NIVEL = { alto: 'Forte indício', medio: 'Atenção', info: 'Informação' };
+function htmlAlerta(a, mostrarOnde) {
+  return '<li class="alerta ' + a.nivel + '"><span class="nv">' + NIVEL[a.nivel] + (mostrarOnde && a.onde ? ' · ' + esc(a.onde) : '') + '</span><span class="tt">' + esc(a.titulo) + '</span>' + (a.detalhe ? '<span class="dt">' + esc(a.detalhe) + '</span>' : '') + (a.porque ? '<span class="pq">' + esc(a.porque) + '</span>' : '') + '</li>';
+}
+function kv(pares) { const f = pares.filter((p) => p[2] != null && p[2] !== ''); if (!f.length) return ''; return '<div class="kv">' + f.map((p) => '<div>' + esc(p[0]) + (p[1] ? '<br><small>' + esc(p[1]) + '</small>' : '') + '</div><div>' + (p[3] ? p[2] : esc(p[2])) + '</div>').join('') + '</div>'; }
+function textoTodos(obj) { const linhas = []; const ver = (v) => v instanceof Uint8Array ? (v.length > 64 ? '(' + v.length + ' bytes)' : textoIndef(v)) : Array.isArray(v) ? v.map((x) => typeof x === 'number' ? +x.toFixed(6) : x).join(', ') : typeof v === 'number' ? +v.toFixed(6) : String(v); Object.entries(obj || {}).forEach(([k, v]) => { if (k === 'ExifIFD' || k === 'GPSIFD') return; linhas.push(k + ': ' + ver(v)); }); return linhas.join('\n'); }
+function cartaoImagem(img, ai, ii) {
+  const g = img.gps, cli = estado.cliente;
+  const pares = [
+    ['Aparelho', 'Make / Model', [img.marca, img.modelo].filter(Boolean).join(' ')],
+    ['Sistema / programa', 'Software', img.software],
+    ['Tirada em', 'DateTimeOriginal', img.dOriginal && img.dOriginal.mostrar],
+    ['Salva em', 'DateTime', img.dModif && img.dModif.mostrar],
+    ['Tamanho', '', (img.largura && img.altura ? img.largura + ' × ' + img.altura + ' px · ' : '') + tamanhoTxt(img.tamanho)],
+    ['Cor', '', img.cinza || img.componentes === 1 ? 'preto e branco' : img.cinza === false ? 'colorida' : ''],
+    ['Cor no PDF', 'ColorSpace', img.pdfCor],
+    ['Qualidade JPEG (aprox.)', 'tabela de quantização', img.qualidade ? img.qualidade + '%' : ''],
+    ['Localização', 'GPS', g ? '<a href="' + linkMapa(g) + '" target="_blank" rel="noopener">' + esc(coordTxt(g)) + '</a>' + (cli ? ' · <b>' + esc(kmTxt(distKm(cli, g))) + '</b> da casa' : '') + (g.metodo ? ' · método: ' + esc(g.metodo) : '') + (g.precisao != null ? ' · precisão ' + esc(g.precisao) + ' m' : '') : '', true],
+    ['Número de série', 'BodySerialNumber', img.serie],
+    ['Identificador único', 'ImageUniqueID', img.idUnico],
+    ['Segmentos', '', img.segmentos.join(', ')],
+    ['Comentário', 'COM', img.comentarios.join(' | ')],
+  ];
+  const t = img.tiff;
+  const tecnico = t ? ['— Principal (IFD0) —', textoTodos(t.ifd0), '— Câmera (EXIF) —', textoTodos(t.exif), '— GPS —', textoTodos(t.gps)].join('\n') : 'Sem EXIF.';
+  return '<div class="img-card"><b>' + esc(img.rotulo) + '</b><div class="vis">' +
+    '<figure><img src="' + img.url + '" alt="' + esc(img.rotulo) + '"><figcaption>Imagem</figcaption></figure>' +
+    (img.miniaturaUrl ? '<figure><img src="' + img.miniaturaUrl + '" alt="miniatura escondida"><figcaption>Miniatura escondida' + (img.miniaturaDif != null ? ' (dif. ' + img.miniaturaDif.toFixed(0) + ')' : '') + '</figcaption></figure>' : '') +
+    (img.ela ? '<figure><img src="' + img.ela + '" alt="análise ELA"><figcaption>ELA</figcaption></figure>' : '') +
+    '</div>' + kv(pares) +
+    (img.mime === 'image/jpeg' && !img.ela ? '<button class="btn sec peq" type="button" data-ela="' + ai + ':' + ii + '">Fazer análise ELA (mostra partes coladas)</button>' : '') +
+    (img.ela ? '<p class="pq" style="font-size:.85rem;color:var(--suave)">ELA: áreas bem mais claras ou com contorno nítido, diferentes do resto da foto, podem ter sido coladas ou editadas. É indício, não prova sozinha.</p>' : '') +
+    '<details><summary>Todos os dados técnicos</summary><pre class="mono" style="white-space:pre-wrap">' + esc(tecnico + (img.xmp.length ? '\n— XMP —\n' + img.xmp.join('\n').slice(0, 6000) : '')) + '</pre></details></div>';
+}
+function render() {
+  const R = $('#resultado'), arqs = estado.arquivos;
+  $('#btnLimpar').hidden = !arqs.length;
+  if (!arqs.length && !estado.alertas.length) { R.innerHTML = R.dataset.vazio || R.innerHTML; $('#secRelatorio').hidden = true; return; }
+  if (!R.dataset.vazio) R.dataset.vazio = R.innerHTML;
+  const A = estado.alertas, cont = { alto: 0, medio: 0, info: 0 }; A.forEach((a) => cont[a.nivel]++);
+  let h = '';
+  if (estado.exemplo) h += '<p class="alerta medio"><span class="tt">Exemplo fictício</span><span class="dt">Arquivos e dados inventados, só para mostrar como a ferramenta funciona. Toque em "Limpar tudo" antes de usar no processo.</span></p>';
+  h += '<div class="resumo"><span class="pilula p-alto">' + cont.alto + ' forte' + (cont.alto === 1 ? '' : 's') + ' indício' + (cont.alto === 1 ? '' : 's') + '</span><span class="pilula p-medio">' + cont.medio + ' atenção</span><span class="pilula p-info">' + cont.info + ' informação</span>' + ('speechSynthesis' in window ? '<button class="btn sec peq" type="button" id="btnOuvir">Ouvir os achados</button>' : '') + '</div>';
+  h += A.length ? '<ul class="alertas">' + A.map((a) => htmlAlerta(a, true)).join('') + '</ul>' : '<p class="vazio">Nenhuma contradição encontrada nos dados internos.</p>';
+  // linha do tempo
+  const E = estado.eventos, ref = estado.contrato || estado.prova;
+  if (E.length) h += '<h3>Linha do tempo</h3><ul class="tempo">' + E.map((e) => '<li class="' + (e.tipo === 'caso' ? 'caso' : '') + '"><span class="q">' + esc(e.q.mostrar) + (ref && e.tipo !== 'caso' ? '<br><span class="rel">' + (Math.abs(e.q.d - ref.d) < 60000 ? 'mesmo momento' : difTxt(e.q.d - ref.d) + (e.q.d < ref.d ? ' antes' : ' depois')) + ' do ' + (estado.contrato ? 'contrato' : 'informado') + '</span>' : '') + '</span><span>' + esc(e.rotulo) + '<br><span class="rel">' + esc(e.onde) + '</span></span></li>').join('') + '</ul>';
+  // coordenadas
+  if (estado.coordsAchadas.length) h += '<h3>Localizações encontradas</h3><div class="rol"><table><thead><tr><th>Coordenada</th><th>De onde</th><th>Distância da casa</th></tr></thead><tbody>' + estado.coordsAchadas.map((c) => '<tr><td><a href="' + linkMapa(c) + '" target="_blank" rel="noopener">' + esc(coordTxt(c)) + '</a></td><td>' + esc(c.origem) + '</td><td>' + (c.dist != null ? esc(kmTxt(c.dist)) : '<span class="vazio">informe as coordenadas da casa</span>') + '</td></tr>').join('') + '</tbody></table></div>';
+  // arquivos
+  arqs.forEach((it, ai) => {
+    h += '<article class="bloco arquivo" style="background:var(--campo)"><div class="arq-cab"><h3>' + esc(it.nome) + '</h3><span class="mono">' + esc(NOME_TIPO[it.tipo] || it.tipo) + ' · ' + tamanhoTxt(it.tamanho) + '</span></div>';
+    h += '<div class="hash"><span class="mono">SHA-256: ' + it.hash + '</span><button class="btn sec peq" type="button" data-copiar="' + it.hash + '">Copiar</button></div>';
+    const meus = A.filter((a) => a.onde === it.nome || String(a.onde).indexOf(it.nome + ' ›') === 0);
+    if (meus.length) h += '<ul class="alertas">' + meus.map((a) => htmlAlerta(a, false)).join('') + '</ul>';
+    if (it.pdf) {
+      const P = it.pdf, xd = P.xmpCampos || {};
+      h += kv([
+        ['Programa que gerou', 'Producer', P.producer], ['Programa de origem', 'Creator', P.creator], ['Ferramenta (XMP)', 'xmp:CreatorTool', xd['xmp:CreatorTool']],
+        ['Criado em', 'CreationDate', P.dCriacao && P.dCriacao.mostrar], ['Modificado em', 'ModDate', P.dModif && P.dModif.mostrar],
+        ['Autor', 'Author', P.infos.length ? P.infos[P.infos.length - 1].campos.Author : ''], ['Título', 'Title', P.infos.length ? P.infos[P.infos.length - 1].campos.Title : ''],
+        ['Versão do PDF', '', P.versao], ['Páginas', '', P.paginas || ''], ['Vezes que foi salvo', '%%EOF', P.salvamentos + (P.linearizado ? ' (otimizado para web)' : '')],
+        ['Imagens dentro', '', P.imagens || '0'], ['Assinaturas digitais', '', P.assinaturas.length || '0'],
+        ['ID do documento', 'xmpMM:DocumentID', xd['xmpMM:DocumentID']], ['ID desta versão', 'xmpMM:InstanceID', xd['xmpMM:InstanceID']],
+        ['Fontes', 'BaseFont', P.fontes.slice(0, 12).join(', ')],
+      ]);
+      if (P.infos.length > 1 || P.salvamentos > 1) {
+        h += '<h3>Salvamentos do PDF</h3><div class="rol"><table><thead><tr><th>#</th><th>Programa</th><th>Criado</th><th>Modificado</th>' + (EMBUTIDO ? '' : '<th></th>') + '</tr></thead><tbody>';
+        P.revisoes.forEach((r, i) => { const inf = P.infos.filter((x) => x.rev === i).pop(); h += '<tr><td>' + (i + 1) + '</td><td>' + esc(inf ? inf.campos.Producer || inf.campos.Creator || '—' : '—') + '</td><td>' + esc(inf && dataPdf(inf.campos.CreationDate) ? dataPdf(inf.campos.CreationDate).mostrar : '—') + '</td><td>' + esc(inf && dataPdf(inf.campos.ModDate) ? dataPdf(inf.campos.ModDate).mostrar : '—') + '</td>' + (EMBUTIDO ? '' : '<td>' + (i < P.revisoes.length - 1 ? '<button class="btn sec peq" type="button" data-rev="' + ai + ':' + i + '">Recuperar versão ' + (i + 1) + '</button>' : 'atual') + '</td>') + '</tr>'; });
+        h += '</tbody></table></div>';
+      }
+      if (P.texto) h += '<details><summary>Texto lido do PDF (' + P.texto.length + ' caracteres)</summary><pre class="mono" style="white-space:pre-wrap;max-height:300px;overflow:auto">' + esc(P.texto.slice(0, 20000)) + '</pre></details>';
+      else h += '<p class="vazio">Não consegui ler o texto deste PDF (pode ser imagem escaneada ou fonte codificada). Se o laudo traz coordenadas ou IP, digite no campo do passo 2.</p>';
+      h += '<details><summary>Todos os dados técnicos do PDF</summary><pre class="mono" style="white-space:pre-wrap">' + esc(P.infos.map((x) => '— Info (salvamento ' + (x.rev + 1) + ') —\n' + Object.entries(x.campos).map(([k, v]) => k + ': ' + v).join('\n')).join('\n') + (P.xmps.length ? '\n' + P.xmps.map((x) => '— XMP' + (x.doDocumento ? ' do documento' : '') + ' —\n' + Object.entries(x.campos).map(([k, v]) => k + ': ' + v).join('\n') + (x.historico.length ? '\nHistórico:\n' + x.historico.map((hh) => '  ' + [hh.quando, hh.acao, hh.programa, hh.mudou].filter(Boolean).join(' · ')).join('\n') : '')).join('\n') : '')) + '</pre></details>';
+    }
+    if (it.office) h += kv([['Programa', 'Application', it.office.programa], ['Criado por', 'dc:creator', it.office.campos['dc:creator'] || it.office.campos['meta:initial-creator']], ['Última alteração por', 'lastModifiedBy', it.office.campos['cp:lastModifiedBy']], ['Criado em', 'created', it.office.dCriacao && it.office.dCriacao.mostrar], ['Modificado em', 'modified', it.office.dModif && it.office.dModif.mostrar], ['Revisões', 'revision', it.office.campos['cp:revision'] || it.office.campos['meta:editing-cycles']], ['Tempo de edição (min)', 'TotalTime', it.office.campos.TotalTime], ['Empresa', 'Company', it.office.campos.Company], ['Modelo', 'Template', it.office.campos.Template]]);
+    if (it.imagens.length) h += '<h3>' + (it.imagens.length === 1 && it.imagens[0].principal ? 'A foto' : 'Imagens dentro do arquivo (' + it.imagens.length + ')') + '</h3><div class="imagens">' + it.imagens.map((img, ii) => cartaoImagem(img, ai, ii)).join('') + '</div>';
+    h += '</article>';
+  });
+  R.innerHTML = h;
+  $('#secRelatorio').hidden = !arqs.length;
+  montarRelatorio();
+}
+
+/* ============================================================== relatório */
+function agoraTxt() { const d = new Date(); return d.toLocaleString('pt-BR'); }
+function montarRelatorio() {
+  const A = estado.alertas, arqs = estado.arquivos, proc = $('#cProcesso').value.trim(), cli = estado.cliente;
+  let h = '<h2>Relatório técnico de análise de metadados</h2>';
+  h += '<p>' + (proc ? 'Processo/caso: <b>' + esc(proc) + '</b>. ' : '') + 'Análise feita em ' + esc(agoraTxt()) + ', com a ferramenta "Perito de Metadados" versão ' + VERSAO + ', que lê os dados internos dos arquivos sem alterá-los.' + (estado.exemplo ? ' <b>ATENÇÃO: EXEMPLO FICTÍCIO.</b>' : '') + '</p>';
+  h += '<h3>1. Arquivos analisados</h3><p>O código SHA-256 identifica cada arquivo. Qualquer alteração, mesmo de um só caractere, muda o código. Se o código conferir, o arquivo analisado é o mesmo dos autos.</p><ul>' + arqs.map((it) => '<li><b>' + esc(it.nome) + '</b> (' + esc(NOME_TIPO[it.tipo] || it.tipo) + ', ' + tamanhoTxt(it.tamanho) + ')<br><span class="mono">SHA-256: ' + it.hash + '</span></li>').join('') + '</ul>';
+  h += '<h3>2. Achados</h3>';
+  if (A.length) h += '<ol>' + A.map((a) => '<li><b>[' + NIVEL[a.nivel] + '] ' + esc(a.titulo) + '</b>' + (a.onde ? ' — ' + esc(a.onde) : '') + (a.detalhe ? '<br>' + esc(a.detalhe) : '') + (a.porque ? '<br><i>' + esc(a.porque) + '</i>' : '') + '</li>').join('') + '</ol>';
+  else h += '<p>Nenhuma contradição nos dados internos.</p>';
+  if (estado.eventos.length) h += '<h3>3. Linha do tempo dos dados internos</h3><ul>' + estado.eventos.map((e) => '<li><span class="mono">' + esc(e.q.mostrar) + '</span> — ' + esc(e.rotulo) + ' (' + esc(e.onde) + ')</li>').join('') + '</ul>';
+  if (estado.coordsAchadas.length) h += '<h3>4. Localizações</h3>' + (cli ? '<p>Endereço do cliente: ' + esc($('#cEndereco').value || '') + ' — coordenada ' + esc(coordTxt(cli)) + '.</p>' : '') + '<ul>' + estado.coordsAchadas.map((c) => '<li>' + esc(coordTxt(c)) + ' (' + esc(c.origem) + ')' + (c.dist != null ? ': <b>' + esc(kmTxt(c.dist)) + '</b> do endereço do cliente' : '') + ' — ' + esc(linkMapa(c)) + '</li>').join('') + '</ul><p>Observação: localização obtida por IP ou por antena (rede) indica a posição aproximada do equipamento da operadora, não a do usuário.</p>';
+  h += '<h3>5. Como o juízo pode conferir sozinho</h3><ol>' +
+    '<li><b>Código do arquivo (SHA-256):</b> no Windows, abra o "Prompt de Comando" e digite <span class="mono">certutil -hashfile "arquivo.pdf" SHA256</span>. No Linux ou Mac: <span class="mono">sha256sum arquivo.pdf</span>. O resultado deve ser igual ao do item 1.</li>' +
+    '<li><b>Todos os metadados:</b> programa gratuito ExifTool (exiftool.org), comando <span class="mono">exiftool -a -G1 -s "arquivo.pdf"</span>. Mostra programa, datas, aparelho, GPS e versões anteriores (o "-a" exibe as duplicadas).</li>' +
+    '<li><b>Versões anteriores do PDF:</b> <span class="mono">exiftool -PDF-update:all "arquivo.pdf"</span> mostra o que mudou em cada salvamento. A quantidade de salvamentos é a quantidade de marcas "%%EOF" no arquivo.</li>' +
+    '<li><b>Assinatura digital:</b> validador oficial do ITI, validar.iti.gov.br.</li>' +
+    '<li><b>Edição de foto (ELA):</b> site fotoforensics.com, enviando a foto original.</li>' +
+    '<li><b>Esta ferramenta:</b> abrir o arquivo "Perito de Metadados" no navegador e escolher os mesmos arquivos. O resultado é o mesmo, sem internet.</li></ol>';
+  h += '<h3>6. Pedidos sugeridos ao juízo</h3><ul>' +
+    '<li>Exibição, pelo réu, dos <b>arquivos originais</b> (art. 396 do CPC): selfie/foto exatamente como capturada, com metadados, e documento em formato nativo.</li>' +
+    '<li>Exibição do <b>log de auditoria</b> completo: IP e porta lógica, data e hora com fuso, modelo e identificador do aparelho, sistema operacional e versão do aplicativo, método e <b>precisão</b> (em metros) da geolocalização.</li>' +
+    '<li>Ofício à operadora de internet para identificar o usuário do IP na data e hora informadas (Marco Civil da Internet, arts. 10 e 22).</li>' +
+    '<li>Perícia técnica nos arquivos digitais (art. 464 do CPC; no criminal, art. 159 do CPP), com os quesitos: o arquivo foi alterado depois de gerado? Por qual programa? A foto foi editada, convertida ou capturada por emulador? A localização é por satélite ou por rede, e qual a precisão?</li></ul>';
+  h += '<h3>7. Limites desta análise</h3><p>Esta é uma análise técnica indicativa, feita por software, sobre os dados gravados nos próprios arquivos. Ela aponta contradições e indícios, mas não substitui a perícia oficial. Metadados podem faltar por motivos normais (alguns sistemas apagam), por isso a ausência de um dado não é, sozinha, prova de fraude. Já a contradição entre dados gravados no mesmo arquivo é objetiva e verificável por qualquer pessoa com as ferramentas do item 5.</p>';
+  $('#relatorio').innerHTML = h;
+  const btns = [];
+  btns.push('<button class="btn" type="button" id="btnCopiarRel">Copiar texto do relatório</button>');
+  if (!EMBUTIDO) { btns.push('<button class="btn sec" type="button" id="btnImprimir">Imprimir ou salvar em PDF</button>'); btns.push('<button class="btn sec" type="button" id="btnBaixarRel">Baixar relatório (.html)</button>'); }
+  $('#relBtns').innerHTML = btns.join('');
+}
+function textoRelatorio() { const el = $('#relatorio'); return el.innerText; }
+function baixar(nome, blob) { const u = URL.createObjectURL(blob), a = document.createElement('a'); a.href = u; a.download = nome; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(u); a.remove(); }, 2000); }
+async function copiar(t, ondeStatus) {
+  try { await navigator.clipboard.writeText(t); ondeStatus.textContent = 'Copiado.'; }
+  catch (e) { const ta = document.createElement('textarea'); ta.value = t; document.body.appendChild(ta); ta.select(); let ok = false; try { ok = document.execCommand('copy'); } catch (er) {} ta.remove(); ondeStatus.textContent = ok ? 'Copiado.' : 'Não foi possível copiar automaticamente. Selecione o texto do relatório e copie.'; }
+}
+
+/* =================================================================== voz */
+function falar(texto) {
+  if (!('speechSynthesis' in window)) return; speechSynthesis.cancel();
+  const vs = speechSynthesis.getVoices().filter((v) => /^pt/i.test(v.lang)); const br = vs.filter((v) => /BR/i.test(v.lang)), l = br.length ? br : vs;
+  const voz = l.find((v) => /francisca/i.test(v.name) && /natural|online|neural/i.test(v.name)) || l.find((v) => /francisca/i.test(v.name)) || l.find((v) => /natural|online|neural/i.test(v.name)) || l.find((v) => /google/i.test(v.name)) || l[0];
+  const pedacos = String(texto).match(/[^.!?;:]+[.!?;:]*\s*/g) || [texto]; let atual = '';
+  const fila = []; pedacos.forEach((p) => { if ((atual + p).length > 220 && atual) { fila.push(atual); atual = ''; } atual += p; }); if (atual) fila.push(atual);
+  fila.forEach((p) => { const u = new SpeechSynthesisUtterance(p); u.lang = voz ? voz.lang : 'pt-BR'; if (voz) u.voice = voz; u.rate = 1.15; u.pitch = 0.95; speechSynthesis.speak(u); });
+}
+function textoFala() {
+  const A = estado.alertas; if (!A.length) return 'Nenhuma contradição encontrada.';
+  const c = { alto: 0, medio: 0 }; A.forEach((a) => c[a.nivel] = (c[a.nivel] || 0) + 1);
+  return 'Encontrei ' + (c.alto || 0) + ' fortes indícios e ' + (c.medio || 0) + ' pontos de atenção. ' + A.filter((a) => a.nivel !== 'info').map((a) => a.titulo + '. ' + a.detalhe).join(' ');
+}
+
+/* ============================================================== exemplo */
+function montarTiff(grupos) {
+  const enc = (e) => {
+    if (e.type === 2) { const b = new TextEncoder().encode(e.v + '\0'); return { tag: e.tag, type: 2, count: b.length, data: b }; }
+    if (e.type === 7) { const b = typeof e.v === 'string' ? new TextEncoder().encode(e.v) : e.v; return { tag: e.tag, type: 7, count: b.length, data: b }; }
+    if (e.type === 1) { const b = Uint8Array.from(e.v); return { tag: e.tag, type: 1, count: b.length, data: b }; }
+    if (e.type === 3) { const b = new Uint8Array(2 * e.v.length), dv = new DataView(b.buffer); e.v.forEach((x, i) => dv.setUint16(i * 2, x, true)); return { tag: e.tag, type: 3, count: e.v.length, data: b }; }
+    if (e.type === 5) { const b = new Uint8Array(8 * e.v.length), dv = new DataView(b.buffer); e.v.forEach((x, i) => { dv.setUint32(i * 8, x[0], true); dv.setUint32(i * 8 + 4, x[1], true); }); return { tag: e.tag, type: 5, count: e.v.length, data: b }; }
+    const b = new Uint8Array(4 * e.v.length), dv = new DataView(b.buffer); e.v.forEach((x, i) => dv.setUint32(i * 4, x, true)); return { tag: e.tag, type: 4, count: e.v.length, data: b };
+  };
+  const g = grupos.map((l) => (l || []).map(enc));
+  if (g[1] && g[1].length) g[0].push({ tag: 0x8769, type: 4, count: 1, data: new Uint8Array(4), ptr: 1 });
+  if (g[2] && g[2].length) g[0].push({ tag: 0x8825, type: 4, count: 1, data: new Uint8Array(4), ptr: 2 });
+  g.forEach((l) => l.sort((a, b) => a.tag - b.tag));
+  const tam = (l) => 2 + 12 * l.length + 4 + l.reduce((a, e) => a + (e.data.length > 4 ? e.data.length + (e.data.length & 1) : 0), 0);
+  const offs = []; let o = 8; g.forEach((l, i) => { offs[i] = l.length ? o : 0; o += l.length ? tam(l) : 0; });
+  const out = new Uint8Array(o), dv = new DataView(out.buffer); out.set([0x49, 0x49]); dv.setUint16(2, 42, true); dv.setUint32(4, 8, true);
+  g.forEach((l, gi) => { if (!l.length) return; const base = offs[gi]; dv.setUint16(base, l.length, true); let dp = base + 2 + 12 * l.length + 4;
+    l.forEach((e, i) => { const p = base + 2 + i * 12; dv.setUint16(p, e.tag, true); dv.setUint16(p + 2, e.type, true); dv.setUint32(p + 4, e.count, true);
+      if (e.ptr) dv.setUint32(p + 8, offs[e.ptr], true); else if (e.data.length <= 4) out.set(e.data, p + 8); else { dv.setUint32(p + 8, dp, true); out.set(e.data, dp); dp += e.data.length + (e.data.length & 1); } });
+    dv.setUint32(base + 2 + 12 * l.length, 0, true); });
+  return out;
+}
+function comExif(jpeg, tiff) { const cab = deLatin1('Exif\0\0'), len = 2 + cab.length + tiff.length, seg = new Uint8Array(4 + cab.length + tiff.length); seg.set([0xFF, 0xE1, len >> 8, len & 255]); seg.set(cab, 4); seg.set(tiff, 4 + cab.length); return juntar([jpeg.subarray(0, 2), seg, jpeg.subarray(2)]); }
+const blobBytes = async (bl) => new Uint8Array(await bl.arrayBuffer());
+function desenharRosto(x, w, h, cor) {
+  const gr = x.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, cor ? '#7aa6c8' : '#999'); gr.addColorStop(1, cor ? '#d8c3a5' : '#ccc'); x.fillStyle = gr; x.fillRect(0, 0, w, h);
+  x.fillStyle = cor ? '#c68e64' : '#8c8c8c'; x.beginPath(); x.ellipse(w / 2, h * 0.45, w * 0.2, h * 0.27, 0, 0, Math.PI * 2); x.fill();
+  x.fillStyle = cor ? '#3b2a20' : '#333'; x.beginPath(); x.ellipse(w / 2, h * 0.24, w * 0.21, h * 0.11, 0, Math.PI, 0); x.fill();
+  x.fillStyle = '#222'; [[0.43, 0.42], [0.57, 0.42]].forEach(([a, b]) => { x.beginPath(); x.arc(w * a, h * b, w * 0.015, 0, Math.PI * 2); x.fill(); });
+  x.strokeStyle = '#5a2e22'; x.lineWidth = 3; x.beginPath(); x.arc(w / 2, h * 0.55, w * 0.06, 0.2, Math.PI - 0.2); x.stroke();
+  x.fillStyle = cor ? '#27496d' : '#555'; x.fillRect(w * 0.22, h * 0.74, w * 0.56, h * 0.26);
+}
+const asc = (tag, v) => ({ tag, type: 2, v });
+const rac = (tag, v) => ({ tag, type: 5, v });
+const graus = (x) => { x = Math.abs(x); const d = Math.floor(x), m = Math.floor((x - d) * 60), s = Math.round(((x - d) * 60 - m) * 60 * 100); return [[d, 1], [m, 1], [s, 100]]; };
+async function carregarExemplo() {
+  limpar(); estado.exemplo = true; status('Montando o exemplo…');
+  const W = 480, H = 640;
+  // 1) selfie colorida com GPS por rede e um retângulo "colado"
+  const c = tela(W, H), x = c.getContext('2d'); desenharRosto(x, W, H, true);
+  const baixa = await new Promise((ok) => c.toBlob(ok, 'image/jpeg', 0.55)); const bm = await bitmap(baixa); x.drawImage(bm, 0, 0);
+  x.fillStyle = '#f4f0e6'; x.fillRect(W * 0.3, H * 0.79, W * 0.4, H * 0.08); x.fillStyle = '#1b3550'; x.font = 'bold 22px sans-serif'; x.fillText('DOC. ID 1234', W * 0.33, H * 0.845);
+  let selfie = await blobBytes(await new Promise((ok) => c.toBlob(ok, 'image/jpeg', 0.92)));
+  const lat = -19.8157, lon = -43.9542;
+  selfie = comExif(selfie, montarTiff([
+    [asc(0x010F, 'samsung'), asc(0x0110, 'SM-A105M'), asc(0x0131, 'A105MUBS2BUB1'), asc(0x0132, '2022:03:11 09:12:40')],
+    [asc(0x9003, '2022:03:10 14:05:12'), asc(0x9004, '2022:03:10 14:05:12'), asc(0x9011, '-03:00')],
+    [asc(1, 'S'), rac(2, graus(lat)), asc(3, 'W'), rac(4, graus(lon)), { tag: 0x1B, type: 7, v: 'ASCII\0\0\0NETWORK' }, asc(0x1D, '2022:03:10'), rac(7, [[17, 1], [5, 1], [12, 1]])],
+  ]));
+  // 2) PDF do "laudo" com foto em preto e branco, salvo duas vezes
+  const c2 = tela(240, 320), x2 = c2.getContext('2d'); desenharRosto(x2, 240, 320, false);
+  let foto = await blobBytes(await new Promise((ok) => c2.toBlob(ok, 'image/jpeg', 0.8)));
+  foto = comExif(foto, montarTiff([[asc(0x010F, 'samsung'), asc(0x0110, 'SM-A105M'), asc(0x0131, 'A105MUBS1ATB2'), asc(0x0132, '2022:03:10 14:05:12')], [asc(0x9003, '2022:03:10 14:05:12')], []]));
+  const pdf = montarPdfExemplo(foto);
+  await analisarArquivo('EXEMPLO-laudo-formalizacao.pdf', pdf);
+  await analisarArquivo('EXEMPLO-selfie-prova-de-vida.jpg', selfie);
+  $('#cProcesso').value = 'EXEMPLO FICTÍCIO 0000000-00.0000.0.00.0000';
+  $('#cContrato').value = '2022-03-10'; $('#cProva').value = '2022-03-10T14:05';
+  $('#cEndereco').value = 'Rua Exemplo, 100 - Belo Horizonte (fictício)'; $('#cCoord').value = '-19.9191, -43.9386';
+  $('#cTexto').value = '';
+  status('Exemplo carregado. Role para ver os achados.');
+  recalcular();
+}
+function montarPdfExemplo(jpeg) {
+  const partes = [], offs = {}; let pos = 0;
+  const put = (x) => { const b = typeof x === 'string' ? deLatin1(x) : x; partes.push(b); pos += b.length; };
+  const obj = (n, corpo) => { offs[n] = pos; put(n + ' 0 obj\n' + corpo + '\nendobj\n'); };
+  put('%PDF-1.4\n%\xe2\xe3\xcf\xd3\n');
+  const xmp = '<?xpacket begin="" id="W5M0MpCehiHzreSzNTczkc9d"?><x:xmpmeta xmlns:x="adobe:ns:meta/"><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"><rdf:Description rdf:about="" xmlns:xmp="http://ns.adobe.com/xap/1.0/" xmlns:pdf="http://ns.adobe.com/pdf/1.3/" xmp:CreateDate="2022-03-10T14:06:00-03:00" xmp:ModifyDate="2022-03-10T14:06:00-03:00" xmp:CreatorTool="FormalizaDigital (exemplo)" pdf:Producer="FormalizaDigital Engine 3.2 (exemplo)"/></rdf:RDF></x:xmpmeta><?xpacket end="w"?>';
+  const texto = 'BT /F1 14 Tf 50 790 Td (LAUDO DE FORMALIZACAO DIGITAL - EXEMPLO FICTICIO) Tj ET\nBT /F1 11 Tf 50 765 Td (Cliente: Fulano de Tal \\(ficticio\\)) Tj ET\nBT /F1 11 Tf 50 748 Td (Geolocalizacao da captura - Latitude: -19.8157 Longitude: -43.9542) Tj ET\nBT /F1 11 Tf 50 731 Td (IP de origem: 177.12.34.56) Tj ET\nBT /F1 11 Tf 50 714 Td (Captura biometrica em 10/03/2022 14:05) Tj ET\nq 180 0 0 240 50 450 cm /Im1 Do Q';
+  obj(1, '<< /Type /Catalog /Pages 2 0 R /Metadata 8 0 R >>');
+  obj(2, '<< /Type /Pages /Kids [3 0 R] /Count 1 >>');
+  obj(3, '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> /XObject << /Im1 6 0 R >> >> >>');
+  obj(4, '<< /Length ' + texto.length + ' >>\nstream\n' + texto + '\nendstream');
+  obj(5, '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>');
+  offs[6] = pos; put('6 0 obj\n<< /Type /XObject /Subtype /Image /Width 240 /Height 320 /ColorSpace /DeviceGray /BitsPerComponent 8 /Filter /DCTDecode /Length ' + jpeg.length + ' >>\nstream\n'); put(jpeg); put('\nendstream\nendobj\n');
+  obj(7, "<< /Producer (FormalizaDigital Engine 3.2 \\(exemplo\\)) /Creator (FormalizaDigital) /CreationDate (D:20220310140600-03'00') /ModDate (D:20220310140600-03'00') >>");
+  obj(8, '<< /Type /Metadata /Subtype /XML /Length ' + xmp.length + ' >>\nstream\n' + xmp + '\nendstream');
+  const xref1 = pos; let t = 'xref\n0 9\n0000000000 65535 f \n'; for (let i = 1; i <= 8; i++) t += String(offs[i]).padStart(10, '0') + ' 00000 n \n';
+  put(t + 'trailer\n<< /Size 9 /Root 1 0 R /Info 7 0 R >>\nstartxref\n' + xref1 + '\n%%EOF\n');
+  // segundo salvamento: alguém abriu no Word e trocou programa e data
+  const o7 = pos; put("7 0 obj\n<< /Producer (Microsoft\xae Word para Microsoft 365) /Creator (Microsoft\xae Word para Microsoft 365) /Author (analista.juridico) /CreationDate (D:20220310140600-03'00') /ModDate (D:20240115093012-03'00') >>\nendobj\n");
+  const xref2 = pos; put('xref\n0 1\n0000000000 65535 f \n7 1\n' + String(o7).padStart(10, '0') + ' 00000 n \ntrailer\n<< /Size 9 /Root 1 0 R /Info 7 0 R /Prev ' + xref1 + ' >>\nstartxref\n' + xref2 + '\n%%EOF\n');
+  return juntar(partes);
+}
+
+/* =============================================================== eventos */
+$('#entrada').addEventListener('change', (e) => { adicionar(e.target.files); e.target.value = ''; });
+$('#btnEscolher').addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); $('#entrada').click(); } });
+const zona = $('#soltar');
+['dragenter', 'dragover'].forEach((t) => zona.addEventListener(t, (e) => { e.preventDefault(); zona.classList.add('sobre'); }));
+['dragleave', 'drop'].forEach((t) => zona.addEventListener(t, (e) => { e.preventDefault(); zona.classList.remove('sobre'); }));
+zona.addEventListener('drop', (e) => adicionar(e.dataTransfer.files));
+$('#btnExemplo').addEventListener('click', () => carregarExemplo().catch((e) => status('Não consegui montar o exemplo: ' + e.message)));
+$('#btnLimpar').addEventListener('click', () => { limpar(); ['#cProcesso', '#cContrato', '#cProva', '#cEndereco', '#cCoord', '#cTexto'].forEach((s) => $(s).value = ''); recalcular(); });
+let tempo = null;
+['#cContrato', '#cProva', '#cCoord', '#cTexto', '#cProcesso', '#cEndereco'].forEach((s) => $(s).addEventListener('input', () => { clearTimeout(tempo); tempo = setTimeout(recalcular, 400); }));
+$('#btnGeo').addEventListener('click', async () => {
+  const q = $('#cEndereco').value.trim(), st2 = $('#geoStatus'); if (!q) { st2.textContent = 'Escreva o endereço primeiro.'; return; }
+  st2.textContent = 'Buscando…';
+  try { const r = await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=br&q=' + encodeURIComponent(q), { headers: { Accept: 'application/json' } }); const j = await r.json();
+    if (!j.length) { st2.textContent = 'Endereço não encontrado. Tente só rua, número e cidade, ou cole as coordenadas do Google Maps.'; return; }
+    $('#cCoord').value = (+j[0].lat).toFixed(6) + ', ' + (+j[0].lon).toFixed(6); st2.textContent = 'Encontrado: ' + j[0].display_name + '. Confira no mapa se é a casa certa.'; recalcular();
+  } catch (e) { st2.textContent = 'Sem acesso à busca de endereço aqui. Cole as coordenadas do Google Maps (segure o dedo na casa e copie os números).'; }
+});
+document.addEventListener('click', async (e) => {
+  const t = e.target.closest('button'); if (!t) return;
+  if (t.dataset.copiar) copiar(t.dataset.copiar, $('#status'));
+  if (t.dataset.ela) { const [a, i] = t.dataset.ela.split(':').map(Number); t.disabled = true; t.textContent = 'Analisando…'; try { await gerarEla(estado.arquivos[a].imagens[i]); } catch (er) { status('ELA falhou: ' + er.message); } render(); }
+  if (t.dataset.rev) { const [a, i] = t.dataset.rev.split(':').map(Number), it = estado.arquivos[a], r = it.pdf.revisoes[i]; baixar(it.nome.replace(/\.pdf$/i, '') + '-versao-' + (i + 1) + '.pdf', new Blob([it.bytes.subarray(0, r.fim)], { type: 'application/pdf' })); }
+  if (t.id === 'btnOuvir') { if (speechSynthesis.speaking) { speechSynthesis.cancel(); t.textContent = 'Ouvir os achados'; } else { falar(textoFala()); t.textContent = 'Parar a leitura'; } }
+  if (t.id === 'btnCopiarRel') copiar(textoRelatorio(), $('#relStatus'));
+  if (t.id === 'btnImprimir') { document.body.classList.add('imprimir'); setTimeout(() => { window.print(); setTimeout(() => document.body.classList.remove('imprimir'), 500); }, 50); }
+  if (t.id === 'btnBaixarRel') {
+    const css = '<style>body{font-family:Arial,Helvetica,sans-serif;max-width:800px;margin:24px auto;padding:0 16px;color:#000;line-height:1.5}.mono{font-family:Consolas,monospace;font-size:12px;word-break:break-all}h2{font-size:20px}h3{font-size:16px;margin-top:18px}</style>';
+    baixar('relatorio-metadados.html', new Blob(['<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Relatório de metadados</title>' + css + '</head><body>' + $('#relatorio').innerHTML + '</body></html>'], { type: 'text/html' }));
+  }
+});
+if ('speechSynthesis' in window) { try { speechSynthesis.getVoices(); speechSynthesis.onvoiceschanged = () => {}; } catch (e) {} }
+window.__perito = { estado, analisarArquivo, recalcular, carregarExemplo, lerJpeg, lerTiff, acharCoordenadas };
+</script>
+
+</body>
+</html>

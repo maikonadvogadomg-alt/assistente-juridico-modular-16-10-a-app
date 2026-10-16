@@ -1,0 +1,653 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#2f6b4f">
+<title>Limpador de Processos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;600;700&family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: esteira em 4 estações — entrada, peneira (limpeza), partes, resumo — em uma coluna larga */
+:root{
+  --bg:#edf0ee; --papel:#ffffff; --tinta:#17201c; --suave:#58665f; --linha:#d3dcd7; --campo:#f5f8f6;
+  --acento:#2f6b4f; --acento-forte:#1f4d38; --acento-txt:#ffffff;
+  --alto:#a8241c; --alto-bg:#fbe8e6; --medio:#7d5300; --medio-bg:#fff3d2; --ok:#1d6638; --ok-bg:#e3f3e8; --info:#2b5574; --info-bg:#e5edf4;
+  --f-tit:"Source Serif 4", Georgia, "Times New Roman", serif;
+  --f-txt:"Public Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --f-mono:"JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+  --raio:10px;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0f1512; --papel:#17201b; --tinta:#e3ebe6; --suave:#9db0a6; --linha:#2b3a32; --campo:#111914;
+  --acento:#6cc49a; --acento-forte:#9bdcbc; --acento-txt:#06140d;
+  --alto:#ff8f86; --alto-bg:#3a1a18; --medio:#f2c35b; --medio-bg:#33280f; --ok:#7fd49a; --ok-bg:#15301f; --info:#8fbfe3; --info-bg:#172a3a;
+  color-scheme:dark; } }
+:root[data-theme="dark"]{
+  --bg:#0f1512; --papel:#17201b; --tinta:#e3ebe6; --suave:#9db0a6; --linha:#2b3a32; --campo:#111914;
+  --acento:#6cc49a; --acento-forte:#9bdcbc; --acento-txt:#06140d;
+  --alto:#ff8f86; --alto-bg:#3a1a18; --medio:#f2c35b; --medio-bg:#33280f; --ok:#7fd49a; --ok-bg:#15301f; --info:#8fbfe3; --info-bg:#172a3a;
+  color-scheme:dark; }
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--tinta);font-family:var(--f-txt);font-size:16px;line-height:1.5;margin:0}
+.pagina{max-width:960px;margin:0 auto;padding-inline:16px;padding-block:20px 60px;display:flex;flex-direction:column;gap:18px}
+h1,h2,h3{font-family:var(--f-tit);text-wrap:balance;margin:0;line-height:1.2}
+h1{font-size:1.9rem} h2{font-size:1.3rem} h3{font-size:1.05rem}
+p{margin:0}
+.selo{font-family:var(--f-mono);font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--acento)}
+.sub{color:var(--suave);max-width:66ch}
+.topo{display:flex;flex-direction:column;gap:6px}
+.bloco{background:var(--papel);border:1px solid var(--linha);border-radius:var(--raio);padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.passo{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.passo b{font-family:var(--f-mono);font-size:.8rem;color:var(--acento);border:1px solid var(--acento);border-radius:99px;padding:1px 8px;flex:none}
+.soltar{border:2px dashed var(--linha);border-radius:var(--raio);padding:20px 14px;text-align:center;display:flex;flex-direction:column;gap:10px;align-items:center;background:var(--campo)}
+.soltar.sobre{border-color:var(--acento)}
+.btn{font:inherit;font-weight:600;border-radius:8px;border:1px solid var(--acento);background:var(--acento);color:var(--acento-txt);padding:10px 16px;cursor:pointer;min-height:44px}
+.btn.sec{background:transparent;color:var(--acento)}
+.btn.peq{padding:6px 10px;min-height:34px;font-size:.88rem}
+.btn:disabled{opacity:.5;cursor:default}
+.btn:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible,summary:focus-visible{outline:3px solid var(--acento-forte);outline-offset:2px}
+.linha-btns{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+label.campo{display:flex;flex-direction:column;gap:4px;font-weight:600;font-size:.92rem;min-width:0}
+label.campo small,.dica{font-weight:400;color:var(--suave);font-size:.86rem}
+input[type=text],input[type=number],input[type=password],select,textarea{font:inherit;font-weight:400;border:1px solid var(--linha);border-radius:8px;padding:9px 10px;background:var(--campo);color:var(--tinta);width:100%;min-width:0}
+textarea{min-height:90px;resize:vertical;font-family:var(--f-mono);font-size:.85rem}
+.grade2{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.regras{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:6px 16px}
+.regra{display:flex;gap:8px;align-items:flex-start;padding:6px 0;border-bottom:1px solid var(--linha);font-size:.93rem;min-width:0}
+.regra input{margin-top:4px;flex:none;width:18px;height:18px}
+.regra .n{font-family:var(--f-mono);font-size:.78rem;color:var(--acento);margin-left:auto;flex:none;font-variant-numeric:tabular-nums}
+.numeros{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.numero{background:var(--campo);border:1px solid var(--linha);border-radius:8px;padding:10px 12px}
+.numero b{display:block;font-family:var(--f-mono);font-size:1.25rem;font-variant-numeric:tabular-nums}
+.numero span{font-size:.82rem;color:var(--suave)}
+.barra{height:10px;border-radius:99px;background:var(--campo);border:1px solid var(--linha);overflow:hidden}
+.barra i{display:block;height:100%;width:0;background:var(--acento);transition:width .2s}
+.status{font-size:.9rem;color:var(--suave);min-height:1.4em;overflow-wrap:anywhere}
+.lado{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.lado pre,.caixa{margin:0;background:var(--campo);border:1px solid var(--linha);border-radius:8px;padding:10px;font-family:var(--f-mono);font-size:.78rem;white-space:pre-wrap;overflow-wrap:anywhere;max-height:360px;overflow:auto;min-width:0}
+.lado h3{font-size:.9rem;margin-bottom:4px}
+.repetidas{max-height:260px;overflow:auto;border:1px solid var(--linha);border-radius:8px;padding:6px 10px;background:var(--campo)}
+.repetidas label{display:flex;gap:8px;font-size:.85rem;padding:3px 0;align-items:flex-start}
+.repetidas code{font-family:var(--f-mono);font-size:.78rem;overflow-wrap:anywhere}
+.partes{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.parte{border:1px solid var(--linha);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:6px;background:var(--campo);min-width:0}
+.parte .cab{display:flex;flex-wrap:wrap;gap:8px;justify-content:space-between;align-items:center}
+.pilula{display:inline-flex;border-radius:99px;padding:2px 10px;font-weight:700;font-size:.8rem}
+.p-ok{background:var(--ok-bg);color:var(--ok)} .p-alto{background:var(--alto-bg);color:var(--alto)} .p-info{background:var(--info-bg);color:var(--info)} .p-medio{background:var(--medio-bg);color:var(--medio)}
+.resumo-txt{white-space:pre-wrap;font-size:.92rem;overflow-wrap:anywhere}
+.aviso{border-left:5px solid var(--medio);background:var(--medio-bg);padding:10px 12px;border-radius:0 8px 8px 0;font-size:.92rem}
+.aviso.info{border-color:var(--info);background:var(--info-bg)}
+.erro{color:var(--alto);font-size:.88rem}
+details>summary{cursor:pointer;font-weight:600}
+ol.passos{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;font-size:.93rem}
+code{font-family:var(--f-mono);font-size:.85em;background:var(--campo);border:1px solid var(--linha);border-radius:4px;padding:0 4px;overflow-wrap:anywhere}
+a{color:var(--acento)}
+@media (max-width:640px){ .lado{grid-template-columns:1fr} h1{font-size:1.6rem} }
+</style>
+</head>
+<body>
+
+
+<main class="pagina">
+  <header class="topo">
+    <span class="selo">Para processos grandes · funciona no computador e no celular</span>
+    <h1>Limpador de Processos</h1>
+    <p class="sub">Tira a sujeira dos PDFs do processo (assinaturas eletrônicas, códigos de verificação, links do PJe, cabeçalhos repetidos, páginas duplicadas), divide o texto em partes e resume cada parte com uma IA gratuita. No fim você leva só o resumo para a IA mais forte e paga muito menos.</p>
+  </header>
+
+  <section class="bloco" aria-labelledby="t1">
+    <div class="passo"><b>1</b><h2 id="t1">Arquivos do processo</h2></div>
+    <div class="soltar" id="soltar">
+      <p>PDF do processo (pode juntar vários, na ordem certa) ou texto (.txt).</p>
+      <div class="linha-btns" style="justify-content:center">
+        <label class="btn" for="entrada" tabindex="0" id="btnEscolher">Escolher arquivos</label>
+        <button class="btn sec" type="button" id="btnExemplo">Ver exemplo</button>
+        <button class="btn sec" type="button" id="btnParar" hidden>Parar leitura</button>
+      </div>
+      <input type="file" id="entrada" multiple hidden accept=".pdf,.txt,application/pdf,text/plain">
+      <div class="barra" style="width:100%;max-width:520px" aria-hidden="true"><i id="barraLer"></i></div>
+      <p class="status" id="stLer" role="status"></p>
+    </div>
+    <div id="listaArq"></div>
+  </section>
+
+  <section class="bloco" aria-labelledby="t2" id="secLimpar" hidden>
+    <div class="passo"><b>2</b><h2 id="t2">Limpeza</h2><span class="dica">Marque o que deve sair. O número ao lado mostra quantas vezes foi encontrado.</span></div>
+    <div class="regras" id="regras"></div>
+    <details id="detRep">
+      <summary>Linhas que se repetem em muitas páginas (cabeçalho e rodapé) <span id="nRep"></span></summary>
+      <p class="dica" style="margin:6px 0">Desmarque a linha que quiser manter.</p>
+      <div class="repetidas" id="repetidas"></div>
+    </details>
+    <details>
+      <summary>Minhas regras (regex)</summary>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px">
+        <p class="dica">Uma regra por linha. Pode escrever um texto simples (ex.: <code>Certidão de publicação</code>) que a linha inteira que o contém sai, ou uma expressão regular entre barras (ex.: <code>/^Protocolo nº \d+.*$/gim</code>). Antes de aplicar, veja o que cada regra pega.</p>
+        <textarea id="minhas" placeholder="Documento recebido via Correios&#10;/^Selo de autenticidade.*$/gim"></textarea>
+        <div class="linha-btns"><button class="btn sec peq" type="button" id="btnTestar">Ver o que minhas regras pegam</button></div>
+        <div id="testeRegras"></div>
+      </div>
+    </details>
+    <div class="numeros" id="numeros"></div>
+    <details>
+      <summary>Comparar uma página antes e depois</summary>
+      <div class="linha-btns" style="margin:8px 0"><label class="campo" style="flex-direction:row;align-items:center;gap:8px">Página <input type="number" id="pgVer" min="1" value="1" style="width:110px"></label><select id="arqVer" style="width:auto;max-width:100%"></select></div>
+      <div class="lado"><div><h3>Antes</h3><pre id="antes"></pre></div><div><h3>Depois</h3><pre id="depois"></pre></div></div>
+    </details>
+    <div class="linha-btns">
+      <button class="btn" type="button" id="btnBaixarLimpo">Baixar texto limpo (.txt)</button>
+      <button class="btn sec" type="button" id="btnCopiarLimpo">Copiar texto limpo</button>
+      <span class="status" id="stLimpo"></span>
+    </div>
+    <div id="ocrBox"></div>
+  </section>
+
+  <section class="bloco" aria-labelledby="t3" id="secPartes" hidden>
+    <div class="passo"><b>3</b><h2 id="t3">Partes para a IA</h2></div>
+    <div class="grade2">
+      <label class="campo">Tamanho de cada parte (caracteres)
+        <input type="number" id="tamParte" min="2000" step="1000" value="12000">
+        <small>12.000 serve para IA no computador (Ollama). Gemini e Groq aguentam 40.000 ou mais.</small>
+      </label>
+      <div class="numeros" id="numPartes"></div>
+    </div>
+  </section>
+
+  <section class="bloco" aria-labelledby="t4" id="secIA" hidden>
+    <div class="passo"><b>4</b><h2 id="t4">Resumo com IA gratuita</h2></div>
+    <div class="grade2">
+      <label class="campo">Qual IA
+        <select id="prov">
+          <option value="ollama">Ollama — no seu computador, grátis, sem internet</option>
+          <option value="gemini">Google Gemini — chave grátis</option>
+          <option value="groq">Groq — chave grátis</option>
+          <option value="openrouter">OpenRouter — modelos ":free"</option>
+        </select>
+      </label>
+      <label class="campo">Modelo
+        <input type="text" id="modelo" list="listaModelos">
+        <datalist id="listaModelos"></datalist>
+        <small id="dicaModelo"></small>
+      </label>
+      <label class="campo" id="campoChave">Chave (API key)
+        <input type="password" id="chave" autocomplete="off" placeholder="cole a chave aqui">
+        <small><label style="display:inline-flex;gap:6px;align-items:center;font-weight:400"><input type="checkbox" id="lembrarChave"> lembrar neste aparelho</label></small>
+      </label>
+      <label class="campo" id="campoEndereco">Endereço do Ollama
+        <input type="text" id="endOllama" value="http://localhost:11434">
+      </label>
+      <label class="campo">Pausa entre partes (segundos)
+        <input type="number" id="pausa" min="0" value="2">
+        <small>Chaves grátis têm limite por minuto. Se der "429", aumente.</small>
+      </label>
+    </div>
+    <div class="linha-btns"><button class="btn sec peq" type="button" id="btnTestarIA">Testar conexão e listar modelos</button><span class="status" id="stIA"></span></div>
+    <details id="ajudaOllama">
+      <summary>Como ligar o Ollama no computador (uma vez só)</summary>
+      <ol class="passos" style="margin-top:8px">
+        <li>Baixe e instale o Ollama em <b>ollama.com/download</b>. Ele fica rodando perto do relógio do Windows.</li>
+        <li>Baixe um modelo em português. Abra o Ollama e escolha o modelo na conversa, ou no "Prompt de Comando" digite <code>ollama pull qwen2.5:7b</code> (computador com 16 GB de memória). Com 8 GB de memória use <code>qwen2.5:3b</code> ou <code>gemma3:4b</code>.</li>
+        <li>Toque em "Testar conexão". Se aparecer erro de bloqueio, baixe o arquivo abaixo, dê dois cliques nele e feche e abra o Ollama de novo.</li>
+      </ol>
+      <div class="linha-btns" style="margin-top:8px"><button class="btn sec peq" type="button" id="btnBat">Baixar "liberar-ollama.bat"</button></div>
+      <p class="dica" style="margin-top:6px">O arquivo só diz ao Ollama para aceitar pedidos desta página. Nada é instalado.</p>
+    </details>
+    <label class="campo">Instrução para cada parte
+      <textarea id="promptParte"></textarea>
+    </label>
+    <label class="campo">Instrução para o resumo final
+      <textarea id="promptFinal"></textarea>
+    </label>
+    <div class="linha-btns">
+      <button class="btn" type="button" id="btnResumir">Resumir todas as partes</button>
+      <button class="btn sec" type="button" id="btnPausar" hidden>Pausar</button>
+      <button class="btn sec" type="button" id="btnFinal" disabled>Fazer o resumo final</button>
+    </div>
+    <div class="barra" aria-hidden="true"><i id="barraIA"></i></div>
+    <p class="status" id="stResumo" role="status"></p>
+    <div id="final"></div>
+    <ul class="partes" id="partes"></ul>
+  </section>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+'use strict';
+/* ======================================================================
+   Limpador de Processos — v1.0
+   Lê PDF (pdf.js) e TXT, limpa, divide e resume com IA gratuita.
+   ====================================================================== */
+const VERSAO = '1.0';
+const $ = (s, el = document) => el.querySelector(s);
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const fmt = (n) => Number(n).toLocaleString('pt-BR');
+const ls = { get(k, d) { try { const v = localStorage.getItem('limpador:' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } }, set(k, v) { try { localStorage.setItem('limpador:' + k, JSON.stringify(v)); } catch (e) {} }, del(k) { try { localStorage.removeItem('limpador:' + k); } catch (e) {} } };
+const E = { arqs: [], parar: false, limpo: null, partes: [], resumos: [], final: '', rodando: false, pausado: false, repetidas: [], desmarcadas: new Set() };
+const PDFJS_WORKER = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+if (window.pdfjsLib) { try { pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER; } catch (e) {} }
+
+/* ------------------------------------------------------------- leitura */
+function linhasDaPagina(itens) {
+  let out = '', ultY = null, fimX = null;
+  for (const it of itens) {
+    if (typeof it.str !== 'string') continue;
+    const tr = it.transform || [1, 0, 0, 1, 0, 0], x = tr[4], y = tr[5], alt = Math.abs(tr[3]) || 10;
+    if (ultY !== null && Math.abs(y - ultY) > alt * 0.5) { out += '\n'; fimX = null; }
+    else if (fimX !== null && it.str && !/^\s/.test(it.str) && !/\s$/.test(out) && x - fimX > alt * 0.15) out += ' ';
+    out += it.str;
+    if (it.str) { ultY = y; fimX = x + (it.width || 0); }
+    if (it.hasEOL) { out += '\n'; ultY = null; fimX = null; }
+  }
+  return out;
+}
+async function lerPdf(arq, bytes) {
+  if (!window.pdfjsLib) throw new Error('O leitor de PDF não carregou. É preciso internet na primeira vez que abre a página.');
+  const doc = await pdfjsLib.getDocument({ data: bytes, isEvalSupported: false }).promise;
+  arq.doc = doc; arq.paginas = [];
+  for (let p = 1; p <= doc.numPages; p++) {
+    if (E.parar) { arq.incompleto = true; break; }
+    let txt = '';
+    try { const pg = await doc.getPage(p); const tc = await pg.getTextContent(); txt = linhasDaPagina(tc.items); pg.cleanup && pg.cleanup(); }
+    catch (e) { txt = ''; }
+    arq.paginas.push(txt);
+    if (p % 10 === 0 || p === doc.numPages) { progresso('#barraLer', p / doc.numPages); $('#stLer').textContent = arq.nome + ': página ' + fmt(p) + ' de ' + fmt(doc.numPages); await new Promise((r) => setTimeout(r, 0)); }
+  }
+}
+function lerTxt(arq, texto) {
+  // aceita marcações de página "\f" (quebra de página) ou blocos grandes
+  const pags = texto.indexOf('\f') >= 0 ? texto.split('\f') : texto.split(/\n(?=\s*\[p\.\s*\d+\]|\s*=+\s*p[áa]gina\s*\d+)/i);
+  arq.paginas = pags.length > 1 ? pags : [texto];
+}
+function progresso(sel, f) { $(sel).style.width = Math.round(Math.max(0, Math.min(1, f)) * 100) + '%'; }
+async function adicionar(lista) {
+  const fs = Array.from(lista || []); if (!fs.length) return;
+  if (E.exemplo) { E.arqs = []; E.exemplo = false; }
+  E.parar = false; $('#btnParar').hidden = false;
+  for (const f of fs) {
+    const arq = { nome: f.name, tamanho: f.size, paginas: [] };
+    try {
+      $('#stLer').textContent = 'Abrindo ' + f.name + '…';
+      if (/\.txt$/i.test(f.name) || f.type === 'text/plain') lerTxt(arq, await f.text());
+      else await lerPdf(arq, new Uint8Array(await f.arrayBuffer()));
+    } catch (e) { arq.erro = e.message; }
+    E.arqs.push(arq);
+    if (E.parar) break;
+  }
+  $('#btnParar').hidden = true;
+  const tot = E.arqs.reduce((a, x) => a + x.paginas.length, 0);
+  $('#stLer').textContent = fmt(tot) + ' páginas lidas.' + (E.parar ? ' Leitura parada antes do fim.' : '');
+  progresso('#barraLer', 1);
+  processar();
+}
+
+/* ------------------------------------------------------------- regras */
+const L = (re) => new RegExp('^.*(?:' + re + ').*$', 'gim');
+const REGRAS = [
+  { id: 'assin', nome: 'Assinatura eletrônica ("Assinado eletronicamente por…")', re: L('assinado (?:eletronicamente|digitalmente) por|assinatura eletr[ôo]nica|documento assinado (?:eletronicamente|digitalmente)|signat[áa]rio\\(?s?\\)?\\s*:|data da assinatura'), on: true },
+  { id: 'lei', nome: 'Avisos da Lei 11.419 / MP 2.200-2 / ICP-Brasil', re: L('lei\\s*(?:n[ºo°.]*\\s*)?11\\.?419|mp\\s*(?:n[ºo°.]*\\s*)?2\\.?200-2|medida provis[óo]ria\\s*(?:n[ºo°.]*\\s*)?2\\.?200|icp-?brasil|infraestrutura de chaves'), on: true },
+  { id: 'verif', nome: 'Código verificador e "para conferir o original"', re: L('c[óo]digo (?:verificador|de verifica[çc][ãa]o|crc|de autenticidade)|para conferir o original|confer[êe]ncia (?:do documento|da autenticidade)|verificar a autenticidade|validar este documento|autenticidade deste documento|informe o (?:c[óo]digo|processo)'), on: true },
+  { id: 'num', nome: 'Rodapé do PJe ("Num. 123 - Pág. 1", "Número do documento")', re: L('num\\.\\s*\\d+\\s*-\\s*p[áa]g\\.?\\s*\\d+|n[úu]mero do documento\\s*:|id\\.?\\s*:?\\s*\\d{6,}\\s*-\\s*p[áa]g|este documento foi gerado pelo usu[áa]rio|documento id\\s*\\d+'), on: true },
+  { id: 'url', nome: 'Links de sistemas (PJe, eproc, e-SAJ, Projudi…)', re: /^.*https?:\/\/\S*(?:pje|eproc|esaj|e-saj|projudi|jus\.br|tjmg|trf\d|tst|stj|stf|seam|consulta|validar)\S*.*$/gim, on: true },
+  { id: 'pagn', nome: 'Números de página e folha soltos ("fls. 12", "Página 3 de 40")', re: /^\s*(?:(?:fls?\.?|folhas?|p[áa]g(?:ina)?\.?)\s*\d+(?:\s*(?:de|\/)\s*\d+)?|\d{1,5}\s*(?:\/|de)\s*\d{1,5}|\d{1,5})\s*$/gim, on: true },
+  { id: 'cert', nome: 'Certificado digital, hash e blocos de código', re: /-----BEGIN [A-Z0-9 ]+-----[\s\S]*?-----END [A-Z0-9 ]+-----|^.*\b(?:hash|sha-?(?:1|256|512)|md5)\b\s*[:=].*$|[A-Za-z0-9+\/]{60,}={0,2}|\b[0-9a-f]{32,}\b/gim, on: true },
+  { id: 'protoc', nome: 'Carimbo de protocolo e juntada automática', re: L('protocolad[oa] em\\s*\\d|juntad[oa] (?:em|aos autos em)\\s*\\d|documento juntado|recebid[oa] em\\s*\\d{2}\\/\\d{2}\\/\\d{4}\\s*\\d{2}:\\d{2}'), on: false },
+  { id: 'certid', nome: 'Certidões automáticas de prazo e publicação (cuidado: podem importar)', re: L('certifico (?:que|para os devidos fins) (?:decorreu|transcorreu|expirou)|decurso de prazo|certid[ãa]o de publica[çc][ãa]o|disponibilizad[oa] no di[áa]rio|considera-se publicad'), on: false },
+];
+const regrasAtivas = () => REGRAS.filter((r) => { const el = $('#rg-' + r.id); return el ? el.checked : r.on; });
+function minhasRegras() {
+  const out = [];
+  $('#minhas').value.split('\n').map((x) => x.trim()).filter(Boolean).forEach((l, i) => {
+    const m = /^\/(.+)\/([gimsuy]*)$/.exec(l);
+    try {
+      if (m) { const fl = m[2].includes('g') ? m[2] : m[2] + 'g'; out.push({ nome: l, re: new RegExp(m[1], fl) }); }
+      else out.push({ nome: l, re: new RegExp('^.*' + l.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '.*$', 'gim') });
+    } catch (e) { out.push({ nome: l, erro: 'Regra ' + (i + 1) + ' com erro: ' + e.message.replace(/^Invalid regular expression: /, '') }); }
+  });
+  return out;
+}
+const normLinha = (l) => l.trim().toLowerCase().replace(/\d+/g, '#').replace(/\s+/g, ' ');
+function acharRepetidas() {
+  const conta = new Map(); let comTexto = 0;
+  E.arqs.forEach((a) => a.paginas.forEach((p) => {
+    if (p.trim().length < 20) return; comTexto++;
+    const vistas = new Set(), ls2 = p.split('\n').filter((l) => l.trim()), borda = ls2.length <= 11 ? ls2 : ls2.slice(0, 5).concat(ls2.slice(-6)); borda.forEach((l) => { const n = normLinha(l); if (n.length < 3 || n.length > 180 || vistas.has(n)) return; vistas.add(n); conta.set(n, (conta.get(n) || 0) + 1); });
+  }));
+  const minimo = Math.max(5, Math.ceil(comTexto * 0.15));
+  E.repetidas = [...conta.entries()].filter(([n, c]) => c >= minimo && /[a-zà-ú]{3}/.test(n) && !/r\$|\bvalor\b|sal[áa]rio|remunera/.test(n)).sort((a, b) => b[1] - a[1]).slice(0, 80).map(([n, c]) => ({ n, c }));
+}
+function limparPagina(t, ativas, minhas, rep, contagem) {
+  let s = t.replace(/\r/g, '');
+  if (rep.size) { const ln = s.split('\n'), idx = []; ln.forEach((l, i) => { if (l.trim()) idx.push(i); }); const zona = new Set(idx.length <= 11 ? idx : idx.slice(0, 5).concat(idx.slice(-6))); s = ln.filter((l, i) => { if (!zona.has(i)) return true; const n = normLinha(l); if (rep.has(n)) { contagem.rep = (contagem.rep || 0) + 1; return false; } return true; }).join('\n'); }
+  for (const r of ativas.concat(minhas)) { if (!r.re) continue; r.re.lastIndex = 0; s = s.replace(r.re, () => { contagem[r.id || r.nome] = (contagem[r.id || r.nome] || 0) + 1; return ''; }); }
+  s = s.replace(/(\p{L})-\n\s*(\p{Ll})/gu, '$1$2');
+  if ($('#rg-juntar') ? $('#rg-juntar').checked : true) s = s.replace(/([^\n.!?:;])\n(?=\s*[a-zà-ú(])/g, '$1 ');
+  return s.split('\n').map((l) => l.replace(/[ \t ]+/g, ' ').trim()).join('\n').replace(/\n{3,}/g, '\n\n').trim();
+}
+function processar() {
+  if (!E.arqs.length) return;
+  $('#secLimpar').hidden = false; $('#secPartes').hidden = false; $('#secIA').hidden = false;
+  if (!$('#regras').children.length) montarRegras();
+  acharRepetidas(); montarRepetidas();
+  aplicar();
+}
+function montarRegras() {
+  $('#regras').innerHTML = REGRAS.map((r) => '<label class="regra"><input type="checkbox" id="rg-' + r.id + '"' + (r.on ? ' checked' : '') + '><span>' + esc(r.nome) + '</span><span class="n" id="n-' + r.id + '"></span></label>').join('') +
+    '<label class="regra"><input type="checkbox" id="rg-rep" checked><span>Linhas repetidas em muitas páginas (cabeçalho e rodapé)</span><span class="n" id="n-rep"></span></label>' +
+    '<label class="regra"><input type="checkbox" id="rg-dup" checked><span>Páginas iguais (documento juntado de novo, procuração repetida)</span><span class="n" id="n-dup"></span></label>' +
+    '<label class="regra"><input type="checkbox" id="rg-juntar" checked><span>Juntar linhas quebradas no meio da frase</span><span class="n"></span></label>' +
+    '<label class="regra"><input type="checkbox" id="rg-marca" checked><span>Marcar o número da página no texto [p. 12] (a IA cita a página)</span><span class="n"></span></label>';
+  $('#regras').addEventListener('change', () => aplicar());
+}
+function montarRepetidas() {
+  $('#nRep').textContent = '(' + E.repetidas.length + ')';
+  $('#repetidas').innerHTML = E.repetidas.length ? E.repetidas.map((r, i) => '<label><input type="checkbox" data-rep="' + i + '"' + (E.desmarcadas.has(r.n) ? '' : ' checked') + '><span><code>' + esc(r.n) + '</code> · em ' + fmt(r.c) + ' páginas</span></label>').join('') : '<p class="dica">Nenhuma linha repetida o suficiente.</p>';
+}
+function aplicar() {
+  const ativas = regrasAtivas(), minhas = minhasRegras().filter((r) => !r.erro);
+  const rep = new Set($('#rg-rep') && !$('#rg-rep').checked ? [] : E.repetidas.filter((r) => !E.desmarcadas.has(r.n)).map((r) => r.n));
+  const dup = $('#rg-dup') ? $('#rg-dup').checked : true, marca = $('#rg-marca') ? $('#rg-marca').checked : true;
+  const contagem = {}, vistas = new Map(); let antes = 0, depois = 0, vazias = 0, dups = 0; const blocos = []; const paginasLimpas = [];
+  E.arqs.forEach((a, ai) => {
+    const lim = [];
+    blocos.push({ arq: ai, pag: 0, texto: '##### ARQUIVO ' + (ai + 1) + ': ' + a.nome + ' #####' });
+    let semTexto = [];
+    a.paginas.forEach((p, pi) => {
+      antes += p.length;
+      let t = limparPagina(p, ativas, minhas, rep, contagem);
+      if (!p.trim()) { semTexto.push(pi + 1); vazias++; lim.push(''); return; }
+      if (dup && t.length > 80) { const h = t.toLowerCase().replace(/\s+/g, ''); if (vistas.has(h)) { dups++; const o = vistas.get(h); t = '[página igual à p. ' + o.p + (o.a !== ai ? ' do arquivo ' + (o.a + 1) : '') + ']'; } else vistas.set(h, { a: ai, p: pi + 1 }); }
+      lim.push(t);
+      if (t) { const corpo = (marca ? '[p. ' + (pi + 1) + ']\n' : '') + t; blocos.push({ arq: ai, pag: pi + 1, texto: corpo }); depois += corpo.length; }
+    });
+    if (semTexto.length) blocos.push({ arq: ai, pag: 0, texto: '[' + semTexto.length + ' página(s) sem texto, provavelmente escaneadas: ' + faixas(semTexto) + ']' });
+    a.semTexto = semTexto; paginasLimpas.push(lim);
+  });
+  contagem.dup = dups;
+  E.limpo = { blocos, paginasLimpas, antes, depois, vazias, dups };
+  REGRAS.forEach((r) => { const el = $('#n-' + r.id); if (el) el.textContent = contagem[r.id] ? fmt(contagem[r.id]) : ''; });
+  $('#n-rep').textContent = contagem.rep ? fmt(contagem.rep) : ''; $('#n-dup').textContent = dups ? fmt(dups) : '';
+  const tot = E.arqs.reduce((x, a) => x + a.paginas.length, 0);
+  $('#numeros').innerHTML = [
+    [fmt(tot), 'páginas'], [fmt(antes), 'caracteres antes'], [fmt(depois), 'caracteres depois'],
+    [antes ? Math.round((1 - depois / antes) * 100) + '%' : '0%', 'de sujeira tirada'], ['≈ ' + fmt(Math.round(depois / 4)), 'tokens (custo de IA)'], [fmt(vazias), 'páginas sem texto'],
+  ].map(([n, t]) => '<div class="numero"><b>' + n + '</b><span>' + t + '</span></div>').join('');
+  const sel = $('#arqVer'); if (sel.options.length !== E.arqs.length) sel.innerHTML = E.arqs.map((a, i) => '<option value="' + i + '">' + esc(a.nome) + '</option>').join('');
+  verPagina(); montarOcr(); dividir();
+}
+function faixas(ns) { const out = []; let i = 0; while (i < ns.length) { let j = i; while (j + 1 < ns.length && ns[j + 1] === ns[j] + 1) j++; out.push(i === j ? '' + ns[i] : ns[i] + '–' + ns[j]); i = j + 1; } return out.join(', '); }
+function verPagina() {
+  const a = E.arqs[+$('#arqVer').value || 0]; if (!a) return; const p = Math.max(1, Math.min(a.paginas.length, +$('#pgVer').value || 1));
+  $('#antes').textContent = a.paginas[p - 1] || '(página sem texto)'; $('#depois').textContent = (E.limpo.paginasLimpas[+$('#arqVer').value || 0] || [])[p - 1] || '(nada sobrou)';
+}
+function textoLimpo() { return E.limpo.blocos.map((b) => b.texto).join('\n\n'); }
+
+/* ------------------------------------------------------------- OCR */
+function montarOcr() {
+  const total = E.arqs.reduce((x, a) => x + (a.semTexto ? a.semTexto.length : 0), 0), box = $('#ocrBox');
+  if (!total) { box.innerHTML = ''; return; }
+  const comDoc = E.arqs.some((a) => a.doc && a.semTexto.length);
+  box.innerHTML = '<div class="aviso"><b>' + fmt(total) + ' página(s) sem texto</b> (escaneadas, foto de documento). ' + E.arqs.filter((a) => a.semTexto && a.semTexto.length).map((a) => esc(a.nome) + ': ' + faixas(a.semTexto)).join('; ') + '.' +
+    (comDoc ? '<br>Dá para ler com OCR aqui mesmo. É lento (uns 5 segundos por página) e precisa de internet para baixar o leitor na primeira vez.<div class="linha-btns" style="margin-top:8px"><label class="campo" style="flex-direction:row;align-items:center;gap:8px">Ler no máximo <input type="number" id="ocrMax" value="' + Math.min(total, 50) + '" min="1" style="width:100px"> páginas</label><button class="btn sec peq" type="button" id="btnOcr">Ler páginas escaneadas (OCR)</button></div><p class="status" id="stOcr"></p>' : '') + '</div>';
+}
+let tess = null;
+function carregarScript(u) { return new Promise((ok, falha) => { const s = document.createElement('script'); s.src = u; s.onload = ok; s.onerror = () => falha(new Error('não carregou ' + u)); document.head.appendChild(s); }); }
+async function fazerOcr() {
+  const st = $('#stOcr'), max = +$('#ocrMax').value || 50; let feitas = 0;
+  try {
+    if (!window.Tesseract) { st.textContent = 'Baixando o leitor de OCR…'; await carregarScript('https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js'); }
+    if (!tess) { st.textContent = 'Preparando o português…'; tess = await Tesseract.createWorker('por'); }
+    for (const a of E.arqs) {
+      if (!a.doc) continue;
+      for (const n of a.semTexto.slice()) {
+        if (feitas >= max) break;
+        st.textContent = 'OCR: ' + a.nome + ', página ' + n + ' (' + (feitas + 1) + ' de ' + max + ')…';
+        const pg = await a.doc.getPage(n), vp = pg.getViewport({ scale: 2 }), c = document.createElement('canvas'); c.width = vp.width; c.height = vp.height;
+        await pg.render({ canvasContext: c.getContext('2d'), viewport: vp }).promise;
+        const r = await tess.recognize(c); a.paginas[n - 1] = (r.data.text || '').trim() || ''; feitas++;
+      }
+    }
+    st.textContent = feitas + ' página(s) lidas com OCR.'; acharRepetidas(); montarRepetidas(); aplicar();
+  } catch (e) { st.textContent = 'OCR falhou: ' + e.message; }
+}
+
+/* ------------------------------------------------------------- partes */
+function dividir() {
+  const lim = Math.max(2000, +$('#tamParte').value || 12000), partes = []; let cur = { texto: '', de: null, ate: null };
+  const fecha = () => { if (cur.texto.trim()) partes.push(cur); cur = { texto: '', de: null, ate: null }; };
+  for (const b of E.limpo.blocos) {
+    const rot = b.pag ? (b.arq + 1) + ':' + b.pag : null;
+    let t = b.texto;
+    while (t.length > lim) { // página gigante: corta em pedaços
+      if (cur.texto) fecha();
+      partes.push({ texto: t.slice(0, lim), de: rot, ate: rot }); t = t.slice(lim);
+    }
+    if (cur.texto.length + t.length + 2 > lim) fecha();
+    cur.texto += (cur.texto ? '\n\n' : '') + t; if (rot) { if (!cur.de) cur.de = rot; cur.ate = rot; }
+  }
+  fecha();
+  const chave = assinatura(partes);
+  if (chave !== E.chave) { E.chave = chave; const salvo = ls.get('resumos:' + chave, null); E.resumos = salvo && salvo.length === partes.length ? salvo : partes.map(() => null); E.final = ls.get('final:' + chave, ''); }
+  E.partes = partes;
+  $('#numPartes').innerHTML = '<div class="numero"><b>' + fmt(partes.length) + '</b><span>partes</span></div><div class="numero"><b>≈ ' + fmt(Math.round(partes.reduce((x, p) => x + p.texto.length, 0) / 4)) + '</b><span>tokens no total</span></div>';
+  renderPartes();
+}
+function assinatura(partes) { let h = 2166136261; const s = partes.length + '|' + partes.map((p) => p.texto.length + p.texto.slice(0, 40)).join('|'); for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; } return h.toString(36); }
+const rotPag = (r) => { if (!r) return ''; const [a, p] = r.split(':'); return (E.arqs.length > 1 ? 'arq. ' + a + ' ' : '') + 'p. ' + p; };
+function renderPartes() {
+  const feitos = E.resumos.filter((r) => r && r.texto).length;
+  $('#btnFinal').disabled = !feitos;
+  progresso('#barraIA', E.partes.length ? feitos / E.partes.length : 0);
+  $('#partes').innerHTML = E.partes.map((p, i) => {
+    const r = E.resumos[i];
+    const pil = r && r.texto ? '<span class="pilula p-ok">resumida</span>' : r && r.erro ? '<span class="pilula p-alto">erro</span>' : E.rodando && E.atual === i ? '<span class="pilula p-medio">resumindo…</span>' : '<span class="pilula p-info">aguardando</span>';
+    return '<li class="parte"><div class="cab"><b>Parte ' + (i + 1) + '</b><span class="dica">' + (p.de ? rotPag(p.de) + (p.ate !== p.de ? ' a ' + rotPag(p.ate) : '') + ' · ' : '') + fmt(p.texto.length) + ' caracteres</span>' + pil + '</div>' +
+      (r && r.texto ? '<details><summary>Ver resumo</summary><div class="resumo-txt">' + esc(r.texto) + '</div></details>' : '') + (r && r.erro ? '<p class="erro">' + esc(r.erro) + '</p>' : '') +
+      '<div class="linha-btns"><button class="btn sec peq" type="button" data-copiar-parte="' + i + '">Copiar texto da parte</button>' + (r && (r.texto || r.erro) ? '<button class="btn sec peq" type="button" data-refazer="' + i + '">Resumir de novo</button>' : '') + '</div></li>';
+  }).join('');
+  $('#final').innerHTML = E.final ? '<div class="bloco" style="background:var(--campo)"><h3>Resumo final</h3><div class="resumo-txt">' + esc(E.final) + '</div><div class="linha-btns"><button class="btn" type="button" id="btnCopiarFinal">Copiar resumo final</button><button class="btn sec" type="button" id="btnBaixarResumo">Baixar resumos (.txt)</button>' + ('speechSynthesis' in window ? '<button class="btn sec" type="button" id="btnOuvir">Ouvir</button>' : '') + '</div></div>' : (feitos ? '<div class="linha-btns"><button class="btn sec" type="button" id="btnBaixarResumo">Baixar resumos das partes (.txt)</button></div>' : '');
+}
+
+/* ------------------------------------------------------------- IA */
+const PROMPT_PARTE = 'Você é assistente de um advogado brasileiro. Abaixo está um TRECHO de um processo judicial (texto já limpo, as marcas [p. N] são as páginas).\nFaça um resumo fiel, em português, SEM INVENTAR nada. Organize assim:\n1. Peças e documentos deste trecho (tipo, quem apresentou, página).\n2. Fatos e alegações importantes.\n3. Datas, prazos e valores.\n4. Decisões, despachos e sentenças (o que foi decidido).\n5. Provas, laudos e contradições que chamam atenção.\nCite sempre a página entre colchetes, ex.: [p. 12]. Se o trecho só tiver documentos sem importância (procuração, comprovantes, certidões automáticas), responda apenas: "Trecho sem conteúdo relevante" e diga quais documentos são.';
+const PROMPT_FINAL = 'Você é assistente de um advogado brasileiro. Abaixo estão os RESUMOS de todas as partes de um processo judicial, em ordem. Junte tudo num resumo final, sem inventar, com:\n1. Quem são as partes e qual é o caso, em poucas linhas.\n2. Linha do tempo (data — acontecimento — página).\n3. Pedidos de cada lado.\n4. Decisões já tomadas e situação atual.\n5. Provas importantes e contradições encontradas.\n6. Prazos ou providências pendentes e o que precisa ser conferido nos autos.\nMantenha as citações de página [p. N].';
+const PROV = {
+  ollama: { modelo: 'qwen2.5:7b', dica: 'Modelos em português bons e leves: qwen2.5:7b, qwen2.5:3b, gemma3:4b, llama3.1:8b.' },
+  gemini: { modelo: 'gemini-2.5-flash', dica: 'Crie a chave grátis em aistudio.google.com (botão "Get API key").' },
+  groq: { modelo: 'llama-3.3-70b-versatile', dica: 'Crie a chave grátis em console.groq.com.' },
+  openrouter: { modelo: 'meta-llama/llama-3.3-70b-instruct:free', dica: 'Crie a chave grátis em openrouter.ai. Use só modelos terminados em ":free".' },
+};
+function provAtual() { return $('#prov').value; }
+function configProv() {
+  const p = provAtual(), cfg = ls.get('cfg', {});
+  $('#modelo').value = (cfg.modelos || {})[p] || PROV[p].modelo; $('#dicaModelo').textContent = PROV[p].dica;
+  $('#campoChave').hidden = p === 'ollama'; $('#campoEndereco').hidden = p !== 'ollama'; $('#ajudaOllama').hidden = p !== 'ollama';
+  const chaves = ls.get('chaves', {}); $('#chave').value = chaves[p] || ''; $('#lembrarChave').checked = !!chaves[p];
+  $('#listaModelos').innerHTML = '';
+}
+function salvarCfg() {
+  const p = provAtual(), cfg = ls.get('cfg', {}); cfg.prov = p; cfg.modelos = cfg.modelos || {}; cfg.modelos[p] = $('#modelo').value.trim(); cfg.pausa = +$('#pausa').value || 0; cfg.endOllama = $('#endOllama').value.trim(); cfg.tam = +$('#tamParte').value; ls.set('cfg', cfg);
+  const chaves = ls.get('chaves', {}); if ($('#lembrarChave').checked && $('#chave').value.trim()) chaves[p] = $('#chave').value.trim(); else delete chaves[p]; ls.set('chaves', chaves);
+}
+function traduzErro(st, txt) {
+  if (st === 0) return 'Não conectou. ' + (provAtual() === 'ollama' ? 'Confira se o Ollama está aberto. Se estiver, ele está bloqueando esta página: use o "liberar-ollama.bat" (veja "Como ligar o Ollama").' : 'Sem internet ou bloqueado.');
+  if (st === 401 || st === 403) return 'Chave recusada (' + st + '). Confira se copiou a chave inteira.';
+  if (st === 404) return 'Modelo não encontrado (404). Toque em "Testar conexão e listar modelos" e escolha um da lista.' + (provAtual() === 'ollama' ? ' No Ollama, baixe o modelo com: ollama pull ' + $('#modelo').value : '');
+  if (st === 429) return 'Limite da chave grátis atingido (429). Espere um pouco ou aumente a pausa entre partes.';
+  if (st === 413) return 'Parte grande demais para este modelo (413). Diminua o tamanho das partes no passo 3.';
+  return 'Erro ' + st + ': ' + String(txt || '').slice(0, 300);
+}
+async function chamarIA(sistema, texto, sinal) {
+  const p = provAtual(), modelo = $('#modelo').value.trim(), chave = $('#chave').value.trim();
+  let url, corpo, cab = { 'Content-Type': 'application/json' }, pegar;
+  if (p !== 'ollama' && !chave) throw Object.assign(new Error('Cole a chave da ' + p + ' no campo "Chave".'), { fatal: true });
+  if (p === 'ollama') { url = ($('#endOllama').value.trim() || 'http://localhost:11434').replace(/\/+$/, '') + '/api/chat'; corpo = { model: modelo, stream: false, messages: [{ role: 'system', content: sistema }, { role: 'user', content: texto }], options: { num_ctx: Math.min(32768, Math.max(8192, Math.ceil((texto.length + sistema.length) / 3) + 2048)), temperature: 0.2 } }; pegar = (j) => j.message && j.message.content; }
+  else if (p === 'gemini') { url = 'https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(modelo.replace(/^models\//, '')) + ':generateContent?key=' + encodeURIComponent(chave); corpo = { systemInstruction: { parts: [{ text: sistema }] }, contents: [{ role: 'user', parts: [{ text: texto }] }], generationConfig: { temperature: 0.2 } }; pegar = (j) => j.candidates && j.candidates[0] && j.candidates[0].content && (j.candidates[0].content.parts || []).map((x) => x.text || '').join(''); }
+  else { url = p === 'groq' ? 'https://api.groq.com/openai/v1/chat/completions' : 'https://openrouter.ai/api/v1/chat/completions'; cab.Authorization = 'Bearer ' + chave; if (p === 'openrouter') cab['X-Title'] = 'Limpador de Processos'; corpo = { model: modelo, temperature: 0.2, messages: [{ role: 'system', content: sistema }, { role: 'user', content: texto }] }; pegar = (j) => j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content; }
+  let r;
+  try { r = await fetch(url, { method: 'POST', headers: cab, body: JSON.stringify(corpo), signal: sinal }); }
+  catch (e) { if (e.name === 'AbortError') throw e; throw Object.assign(new Error(traduzErro(0)), { status: 0 }); }
+  const txt = await r.text(); let j = null; try { j = JSON.parse(txt); } catch (e) {}
+  if (!r.ok) throw Object.assign(new Error(traduzErro(r.status, j && (j.error && (j.error.message || j.error)) || txt)), { status: r.status, fatal: r.status === 401 || r.status === 403 || r.status === 404 });
+  const out = j && pegar(j); if (!out) throw Object.assign(new Error('A IA respondeu vazio. ' + (j && j.candidates && j.candidates[0] && j.candidates[0].finishReason ? 'Motivo: ' + j.candidates[0].finishReason : '')), { status: 200 });
+  return out.trim();
+}
+const dormir = (ms) => new Promise((r) => setTimeout(r, ms));
+async function comTentativas(fn) {
+  let espera = 5000;
+  for (let t = 0; ; t++) {
+    try { return await fn(); }
+    catch (e) { if (e.name === 'AbortError' || e.fatal || t >= 4 || !(e.status === 429 || e.status >= 500 || e.status === 0 && provAtual() !== 'ollama')) throw e; $('#stResumo').textContent = 'Limite ou instabilidade (' + e.status + '). Tentando de novo em ' + Math.round(espera / 1000) + ' s…'; await dormir(espera); espera *= 2; }
+  }
+}
+let controle = null;
+async function resumirTudo(so) {
+  if (E.rodando) return; salvarCfg();
+  E.rodando = true; E.pausado = false; $('#btnPausar').hidden = false; $('#btnResumir').disabled = true;
+  const sis = $('#promptParte').value.trim() || PROMPT_PARTE, pausa = Math.max(0, +$('#pausa').value || 0) * 1000;
+  try {
+    for (let i = 0; i < E.partes.length; i++) {
+      if (so != null && i !== so) continue;
+      if (E.pausado) break;
+      if (so == null && E.resumos[i] && E.resumos[i].texto) continue;
+      E.atual = i; renderPartes(); $('#stResumo').textContent = 'Resumindo a parte ' + (i + 1) + ' de ' + E.partes.length + '…';
+      controle = new AbortController();
+      try { const t = await comTentativas(() => chamarIA(sis, E.partes[i].texto, controle.signal)); E.resumos[i] = { texto: t }; }
+      catch (e) { if (e.name === 'AbortError') break; E.resumos[i] = { erro: e.message }; if (e.fatal) { $('#stResumo').textContent = e.message; break; } }
+      ls.set('resumos:' + E.chave, E.resumos); renderPartes();
+      if (pausa && i < E.partes.length - 1 && so == null) await dormir(pausa);
+    }
+    const feitos = E.resumos.filter((r) => r && r.texto).length;
+    if (!/Cole a chave|recusada|não encontrado/.test($('#stResumo').textContent)) $('#stResumo').textContent = feitos + ' de ' + E.partes.length + ' partes resumidas.' + (feitos === E.partes.length ? ' Agora toque em "Fazer o resumo final".' : E.pausado ? ' Pausado. Toque em "Resumir" para continuar de onde parou.' : '');
+  } finally { E.rodando = false; E.atual = null; $('#btnPausar').hidden = true; $('#btnResumir').disabled = false; renderPartes(); }
+}
+async function resumoFinal() {
+  if (E.rodando) return; salvarCfg();
+  const lim = Math.max(8000, +$('#tamParte').value || 12000) * 1.5, sis = $('#promptFinal').value.trim() || PROMPT_FINAL, sisParte = 'Junte estes resumos parciais de um processo num só resumo, sem perder datas, valores, decisões e páginas [p. N]. Não invente.';
+  let itens = E.resumos.map((r, i) => r && r.texto ? '=== Parte ' + (i + 1) + (E.partes[i].de ? ' (' + rotPag(E.partes[i].de) + ' a ' + rotPag(E.partes[i].ate) + ')' : '') + ' ===\n' + r.texto : null).filter(Boolean);
+  if (!itens.length) return;
+  const falta = E.resumos.filter((r) => !r || !r.texto).length;
+  E.rodando = true; $('#btnFinal').disabled = true;
+  try {
+    let rodada = 1;
+    while (itens.join('\n\n').length > lim && itens.length > 1) { // junta em grupos até caber
+      const grupos = []; let g = '';
+      itens.forEach((t) => { if (g && g.length + t.length > lim) { grupos.push(g); g = ''; } g += (g ? '\n\n' : '') + t; }); if (g) grupos.push(g);
+      const novos = [];
+      for (let k = 0; k < grupos.length; k++) { $('#stResumo').textContent = 'Juntando resumos (rodada ' + rodada + ', grupo ' + (k + 1) + ' de ' + grupos.length + ')…'; controle = new AbortController(); novos.push('=== Bloco ' + (k + 1) + ' ===\n' + await comTentativas(() => chamarIA(sisParte, grupos[k], controle.signal))); await dormir(Math.max(0, +$('#pausa').value || 0) * 1000); }
+      if (novos.length >= itens.length) break; itens = novos; rodada++;
+    }
+    $('#stResumo').textContent = 'Fazendo o resumo final…'; controle = new AbortController();
+    E.final = (falta ? '[Atenção: ' + falta + ' parte(s) ainda não resumida(s) ficaram de fora.]\n\n' : '') + await comTentativas(() => chamarIA(sis, itens.join('\n\n'), controle.signal));
+    ls.set('final:' + E.chave, E.final); $('#stResumo').textContent = 'Resumo final pronto. Agora pode levar só ele para a IA mais forte.';
+  } catch (e) { $('#stResumo').textContent = 'Não consegui fazer o resumo final: ' + e.message; }
+  finally { E.rodando = false; renderPartes(); }
+}
+async function testarIA() {
+  salvarCfg(); const p = provAtual(), chave = $('#chave').value.trim(), st = $('#stIA'); st.textContent = 'Testando…';
+  try {
+    let url, cab = {}, lista;
+    if (p === 'ollama') url = ($('#endOllama').value.trim() || 'http://localhost:11434').replace(/\/+$/, '') + '/api/tags';
+    else if (!chave) { st.textContent = 'Cole a chave primeiro.'; return; }
+    else if (p === 'gemini') url = 'https://generativelanguage.googleapis.com/v1beta/models?pageSize=200&key=' + encodeURIComponent(chave);
+    else if (p === 'groq') { url = 'https://api.groq.com/openai/v1/models'; cab.Authorization = 'Bearer ' + chave; }
+    else { url = 'https://openrouter.ai/api/v1/models'; }
+    let r; try { r = await fetch(url, { headers: cab }); } catch (e) { st.textContent = traduzErro(0); return; }
+    if (!r.ok) { st.textContent = traduzErro(r.status, await r.text()); return; }
+    const j = await r.json();
+    if (p === 'ollama') lista = (j.models || []).map((m) => m.name);
+    else if (p === 'gemini') lista = (j.models || []).filter((m) => (m.supportedGenerationMethods || []).includes('generateContent')).map((m) => m.name.replace(/^models\//, ''));
+    else if (p === 'openrouter') lista = (j.data || []).map((m) => m.id).filter((id) => /:free$/.test(id));
+    else lista = (j.data || []).map((m) => m.id);
+    $('#listaModelos').innerHTML = lista.map((m) => '<option value="' + esc(m) + '">').join('');
+    if (p === 'ollama' && !lista.length) { st.textContent = 'Conectou, mas não há modelo baixado. No Prompt de Comando: ollama pull qwen2.5:7b'; return; }
+    if (lista.length && !lista.includes($('#modelo').value.trim())) { $('#modelo').value = lista.find((m) => /qwen|gemma|llama|flash/i.test(m)) || lista[0]; salvarCfg(); }
+    st.textContent = 'Conectado. ' + lista.length + ' modelo(s) disponíveis. Toque no campo "Modelo" para escolher.';
+  } catch (e) { st.textContent = 'Erro: ' + e.message; }
+}
+
+/* ------------------------------------------------------------- saídas */
+function baixar(nome, texto, tipo) { const u = URL.createObjectURL(new Blob([texto], { type: tipo || 'text/plain;charset=utf-8' })), a = document.createElement('a'); a.href = u; a.download = nome; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(u); a.remove(); }, 3000); }
+async function copiar(t, st) { try { await navigator.clipboard.writeText(t); st.textContent = 'Copiado (' + fmt(t.length) + ' caracteres).'; } catch (e) { const ta = document.createElement('textarea'); ta.value = t; document.body.appendChild(ta); ta.select(); let ok = false; try { ok = document.execCommand('copy'); } catch (er) {} ta.remove(); st.textContent = ok ? 'Copiado.' : 'Não deu para copiar. Use "Baixar".'; } }
+function nomeBase() { return (E.arqs[0] ? E.arqs[0].nome.replace(/\.[^.]+$/, '') : 'processo').slice(0, 60); }
+function textoResumos() { return (E.final ? '===== RESUMO FINAL =====\n\n' + E.final + '\n\n' : '') + '===== RESUMOS DAS PARTES =====\n\n' + E.resumos.map((r, i) => '--- Parte ' + (i + 1) + (E.partes[i] && E.partes[i].de ? ' (' + rotPag(E.partes[i].de) + ' a ' + rotPag(E.partes[i].ate) + ')' : '') + ' ---\n' + (r && r.texto ? r.texto : '(não resumida)')).join('\n\n'); }
+function falar(texto) {
+  if (!('speechSynthesis' in window)) return; speechSynthesis.cancel();
+  const vs = speechSynthesis.getVoices().filter((v) => /^pt/i.test(v.lang)), br = vs.filter((v) => /BR/i.test(v.lang)), l = br.length ? br : vs;
+  const voz = l.find((v) => /francisca/i.test(v.name) && /natural|online|neural/i.test(v.name)) || l.find((v) => /natural|online|neural/i.test(v.name)) || l.find((v) => /google/i.test(v.name)) || l[0];
+  const fila = []; let cur = ''; (String(texto).replace(/[#*_>|]/g, ' ').match(/[^.!?;:\n]+[.!?;:\n]*\s*/g) || [texto]).forEach((p) => { if ((cur + p).length > 220 && cur) { fila.push(cur); cur = ''; } cur += p; }); if (cur) fila.push(cur);
+  fila.forEach((p) => { const u = new SpeechSynthesisUtterance(p); u.lang = voz ? voz.lang : 'pt-BR'; if (voz) u.voice = voz; u.rate = 1.15; u.pitch = 0.95; speechSynthesis.speak(u); });
+}
+
+/* ------------------------------------------------------------- exemplo */
+function paginaExemplo(n, corpo) {
+  return 'PODER JUDICIÁRIO\nTRIBUNAL DE JUSTIÇA DO ESTADO DE MINAS GERAIS\nJustiça de Primeira Instância - Comarca de Exemplo\n' + corpo +
+    '\nAssinado eletronicamente por: FULANO DE TAL - 1' + n + '/03/2024 10:2' + n + ':11\nhttps://pje.tjmg.jus.br:443/pje/Processo/ConsultaDocumento/listView.seam?x=2403' + n + '1023000000001' + n + '\nNúmero do documento: 2403' + n + '10230000000' + n + '\nNum. 98765' + n + ' - Pág. ' + n + '\nEste documento foi gerado pelo usuário 123.***.***-** em 10/09/2024 15:00:00';
+}
+function carregarExemplo() {
+  const p = [
+    paginaExemplo(1, 'PETIÇÃO INICIAL (EXEMPLO FICTÍCIO)\nFULANO DE TAL, aposentado, vem propor AÇÃO DECLARATÓRIA DE INEXISTÊNCIA DE DÉBITO contra BANCO EXEMPLO S.A.,\npois nunca contratou o empréstimo consignado nº 123456, no valor de R$ 4.800,00,\ndescontado de seu benefício desde 03/2023.'),
+    paginaExemplo(2, 'PROCURAÇÃO\nOutorgante: FULANO DE TAL. Outorgado: advogado OAB/MG 000.000. Poderes da cláusula ad judicia.'),
+    paginaExemplo(3, 'PROCURAÇÃO\nOutorgante: FULANO DE TAL. Outorgado: advogado OAB/MG 000.000. Poderes da cláusula ad judicia.'),
+    paginaExemplo(4, 'CONTESTAÇÃO\nO BANCO EXEMPLO S.A. alega que o contrato foi firmado por biometria facial em 10/03/2022,\ncom geolocalização no endereço do autor, e junta laudo de formalização digital.\nDocumento assinado digitalmente conforme MP nº 2.200-2/2001, que institui a Infraestrutura de Chaves Públicas Brasileira - ICP-Brasil.\nPara conferir o original, acesse o site https://pje.tjmg.jus.br/validar, informe o processo e o código 24031023-ABCD.'),
+    paginaExemplo(5, 'SENTENÇA\nJulgo PROCEDENTE o pedido para declarar inexistente o contrato nº 123456, condenar o réu\na restituir em dobro os valores descontados e a pagar R$ 8.000,00 de danos morais.\nIntimem-se.'),
+  ];
+  E.arqs = [{ nome: 'EXEMPLO-processo-ficticio.pdf', tamanho: 0, paginas: p }]; E.exemplo = true;
+  $('#stLer').textContent = 'Exemplo fictício carregado (5 páginas). Veja na limpeza o que saiu.'; progresso('#barraLer', 1);
+  processar();
+}
+
+/* ------------------------------------------------------------- eventos */
+$('#entrada').addEventListener('change', (e) => { adicionar(e.target.files); e.target.value = ''; });
+$('#btnEscolher').addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); $('#entrada').click(); } });
+const zona = $('#soltar');
+['dragenter', 'dragover'].forEach((t) => zona.addEventListener(t, (e) => { e.preventDefault(); zona.classList.add('sobre'); }));
+['dragleave', 'drop'].forEach((t) => zona.addEventListener(t, (e) => { e.preventDefault(); zona.classList.remove('sobre'); }));
+zona.addEventListener('drop', (e) => adicionar(e.dataTransfer.files));
+$('#btnExemplo').addEventListener('click', carregarExemplo);
+$('#btnParar').addEventListener('click', () => { E.parar = true; });
+$('#repetidas').addEventListener('change', (e) => { const i = e.target.dataset.rep; if (i == null) return; const n = E.repetidas[+i].n; if (e.target.checked) E.desmarcadas.delete(n); else E.desmarcadas.add(n); aplicar(); });
+let tm = null; $('#minhas').addEventListener('input', () => { clearTimeout(tm); tm = setTimeout(() => { const er = minhasRegras().filter((r) => r.erro); $('#testeRegras').innerHTML = er.map((r) => '<p class="erro">' + esc(r.erro) + '</p>').join(''); aplicar(); }, 600); });
+$('#btnTestar').addEventListener('click', () => {
+  const rs = minhasRegras(); if (!rs.length) { $('#testeRegras').innerHTML = '<p class="dica">Escreva uma regra primeiro.</p>'; return; }
+  $('#testeRegras').innerHTML = rs.map((r) => {
+    if (r.erro) return '<p class="erro">' + esc(r.erro) + '</p>';
+    const achou = []; let n = 0;
+    E.arqs.forEach((a) => a.paginas.forEach((p, pi) => { r.re.lastIndex = 0; let m; while ((m = r.re.exec(p))) { n++; if (achou.length < 12) achou.push('p. ' + (pi + 1) + ': ' + m[0].slice(0, 160)); if (!m[0].length) r.re.lastIndex++; } }));
+    return '<p><b>' + esc(r.nome) + '</b> pega ' + fmt(n) + ' trecho(s).</p>' + (achou.length ? '<pre class="caixa">' + esc(achou.join('\n')) + '</pre>' : '');
+  }).join('');
+});
+$('#pgVer').addEventListener('input', verPagina); $('#arqVer').addEventListener('change', verPagina);
+$('#tamParte').addEventListener('change', () => { salvarCfg(); dividir(); });
+$('#prov').addEventListener('change', () => { configProv(); salvarCfg(); });
+['#modelo', '#pausa', '#endOllama'].forEach((s) => $(s).addEventListener('change', salvarCfg));
+$('#lembrarChave').addEventListener('change', salvarCfg); $('#chave').addEventListener('change', salvarCfg);
+$('#btnTestarIA').addEventListener('click', testarIA);
+$('#btnResumir').addEventListener('click', () => resumirTudo(null));
+$('#btnPausar').addEventListener('click', () => { E.pausado = true; if (controle) controle.abort(); $('#stResumo').textContent = 'Pausando…'; });
+$('#btnFinal').addEventListener('click', resumoFinal);
+$('#btnBaixarLimpo').addEventListener('click', () => baixar(nomeBase() + '-limpo.txt', textoLimpo()));
+$('#btnCopiarLimpo').addEventListener('click', () => copiar(textoLimpo(), $('#stLimpo')));
+$('#btnBat').addEventListener('click', () => baixar('liberar-ollama.bat', '@echo off\r\nrem Permite que paginas abertas no navegador conversem com o Ollama deste computador.\r\nsetx OLLAMA_ORIGINS "*"\r\necho.\r\necho Pronto. Agora FECHE o Ollama (icone perto do relogio, botao direito, Quit) e abra de novo.\r\npause\r\n', 'application/octet-stream'));
+document.addEventListener('click', (e) => {
+  const t = e.target.closest('button'); if (!t) return;
+  if (t.dataset.copiarParte != null) copiar(E.partes[+t.dataset.copiarParte].texto, $('#stResumo'));
+  if (t.dataset.refazer != null) { E.resumos[+t.dataset.refazer] = null; resumirTudo(+t.dataset.refazer); }
+  if (t.id === 'btnCopiarFinal') copiar(E.final, $('#stResumo'));
+  if (t.id === 'btnBaixarResumo') baixar(nomeBase() + '-resumo.txt', textoResumos());
+  if (t.id === 'btnOuvir') { if (speechSynthesis.speaking) { speechSynthesis.cancel(); } else falar(E.final); }
+  if (t.id === 'btnOcr') fazerOcr();
+});
+(function iniciar() {
+  const cfg = ls.get('cfg', {});
+  if (cfg.prov) $('#prov').value = cfg.prov; if (cfg.pausa != null) $('#pausa').value = cfg.pausa; if (cfg.endOllama) $('#endOllama').value = cfg.endOllama; if (cfg.tam) $('#tamParte').value = cfg.tam;
+  $('#promptParte').value = PROMPT_PARTE; $('#promptFinal').value = PROMPT_FINAL;
+  configProv();
+  if (!window.pdfjsLib) $('#stLer').textContent = 'Atenção: o leitor de PDF não carregou (sem internet?). Arquivos .txt funcionam; para PDF, conecte e recarregue a página.';
+})();
+window.__lp = { E, aplicar, carregarExemplo, chamarIA, textoLimpo, dividir, linhasDaPagina };
+</script>
+
+</body>
+</html>

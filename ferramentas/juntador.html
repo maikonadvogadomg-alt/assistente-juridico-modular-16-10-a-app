@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1b2337">
+<title>Juntador de Arquivos</title>
+<style>
+  :root { --bg:#0f1420; --bg2:#151b2b; --bg3:#1b2337; --line:#263048; --line2:#34405e; --tx:#d8deea; --mut:#8592ab; --acc:#4f8cff; --ok:#38c793; --warn:#f2b84b; --bad:#ff6b78; --mono:ui-monospace,"Cascadia Code","JetBrains Mono",Consolas,Menlo,monospace; }
+  @media (prefers-color-scheme: light) { :root { --bg:#f4f6fb; --bg2:#ffffff; --bg3:#eef1f8; --line:#d9deea; --line2:#c5ccdc; --tx:#1d2433; --mut:#5d6780; } }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body { margin: 0; background: var(--bg); color: var(--tx); font: 15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; }
+  header { position: sticky; top: 0; z-index: 10; background: var(--bg2); border-bottom: 1px solid var(--line); padding: 10px 14px; padding-top: max(10px, env(safe-area-inset-top)); }
+  header h1 { margin: 0 0 8px; font-size: 17px; }
+  main { max-width: 960px; margin: 0 auto; padding: 12px 14px 120px; }
+  .row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  .btn { font: inherit; font-size: 14px; padding: 8px 12px; border-radius: 9px; border: 1px solid var(--line2); background: var(--bg3); color: var(--tx); cursor: pointer; white-space: nowrap; }
+  .btn:hover { border-color: var(--acc); }
+  .btn.p { background: var(--acc); border-color: var(--acc); color: #fff; font-weight: 600; }
+  .btn.s { padding: 4px 9px; font-size: 13px; border-radius: 7px; }
+  .btn.d { color: var(--bad); }
+  .inp { font: inherit; font-size: 16px; padding: 8px 10px; border-radius: 9px; border: 1px solid var(--line2); background: var(--bg); color: var(--tx); }
+  textarea.inp { width: 100%; font-family: var(--mono); font-size: 13px; }
+  .muted { color: var(--mut); } .small { font-size: 12.5px; }
+  .card { background: var(--bg2); border: 1px solid var(--line); border-radius: 12px; padding: 12px; margin-bottom: 10px; }
+  .drop { border: 2px dashed var(--line2); border-radius: 12px; padding: 18px; text-align: center; color: var(--mut); margin-bottom: 10px; }
+  .drop.on { border-color: var(--acc); color: var(--tx); }
+  .it { background: var(--bg2); border: 1px solid var(--line); border-radius: 10px; margin-bottom: 6px; }
+  .it.off { opacity: .5; }
+  .it-h { display: flex; align-items: center; gap: 6px; padding: 7px 8px; }
+  .it-h input[type=checkbox] { width: 18px; height: 18px; flex-shrink: 0; }
+  .nm { flex: 1; min-width: 0; cursor: pointer; }
+  .nm b { display: block; font-family: var(--mono); font-size: 13px; word-break: break-all; }
+  .nm small { color: var(--mut); font-size: 11.5px; }
+  .tag { font-size: 10.5px; padding: 1px 6px; border-radius: 99px; background: var(--bg3); border: 1px solid var(--line2); margin-right: 4px; }
+  .mv { display: flex; gap: 3px; flex-shrink: 0; }
+  .body { border-top: 1px solid var(--line); padding: 8px; }
+  pre.code { margin: 0; white-space: pre-wrap; word-break: break-word; font: 12.5px/1.5 var(--mono); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 10px; max-height: 70vh; overflow: auto; }
+  mark { background: #f2b84b66; color: inherit; border-radius: 2px; }
+  .bar { position: fixed; left: 0; right: 0; bottom: 0; background: var(--bg2); border-top: 1px solid var(--line); padding: 8px 14px; padding-bottom: max(8px, env(safe-area-inset-bottom)); z-index: 10; }
+  .bar .row { max-width: 960px; margin: 0 auto; }
+  .toast { position: fixed; left: 50%; bottom: 80px; transform: translateX(-50%); background: #111827; color: #fff; padding: 9px 14px; border-radius: 10px; font-size: 14px; z-index: 50; max-width: 90vw; text-align: center; }
+  .modal { position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 40; display: flex; align-items: center; justify-content: center; padding: 14px; }
+  .modal > div { background: var(--bg2); border: 1px solid var(--line2); border-radius: 14px; padding: 14px; width: 100%; max-width: 720px; max-height: 90vh; overflow: auto; }
+  .opts label { display: flex; gap: 8px; align-items: flex-start; margin: 6px 0; font-size: 14px; }
+  .opts input[type=radio], .opts input[type=checkbox] { margin-top: 3px; width: 17px; height: 17px; flex-shrink: 0; }
+  details > summary { cursor: pointer; }
+</style>
+</head>
+<body>
+<header>
+  <h1>🧩 Juntador de Arquivos</h1>
+  <div class="row">
+    <button class="btn p" id="b-add">⤒ Arquivos</button>
+    <button class="btn" id="b-dir">📁 Pasta</button>
+    <button class="btn" id="b-paste">📋 Colar texto</button>
+    <input class="inp" id="q" placeholder="🔍 Procurar…" style="flex:1;min-width:120px;padding:6px 9px;font-size:14px">
+  </div>
+  <input type="file" id="f-files" multiple hidden>
+  <input type="file" id="f-dir" webkitdirectory multiple hidden>
+</header>
+<main>
+  <div class="drop" id="drop">Toque em <b>⤒ Arquivos</b> ou arraste aqui.<br><span class="small">Qualquer tipo: .md, .txt, .html, .tsx, .js, .css, .json, .py, .docx, .zip (abre e pega tudo de dentro)…</span></div>
+  <div class="row small muted" id="resumo" style="margin-bottom:8px"></div>
+  <div class="row" id="ordem" hidden style="margin-bottom:8px">
+    <span class="small muted">Ordenar:</span>
+    <button class="btn s" data-o="nome">Nome A→Z</button>
+    <button class="btn s" data-o="tipo">Tipo</button>
+    <button class="btn s" data-o="pasta">Pasta</button>
+    <button class="btn s" data-o="tam">Tamanho</button>
+    <button class="btn s" data-o="inv">Inverter</button>
+    <button class="btn s" id="b-todos">☑ Todos</button>
+    <button class="btn s" id="b-nenhum">☐ Nenhum</button>
+    <button class="btn s d" id="b-limpar">🗑 Limpar tudo</button>
+  </div>
+  <div id="lista"></div>
+</main>
+<div class="bar" id="bar" hidden>
+  <div class="row">
+    <span class="small muted" id="sel"></span>
+    <span style="flex:1"></span>
+    <button class="btn" id="b-copiar">📋 Copiar tudo</button>
+    <button class="btn p" id="b-gerar">⤓ Gerar arquivo único</button>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  const $ = (s, r) => (r || document).querySelector(s);
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  let items = [];        // { id, path, text|null, b64|null, size, on, open }
+  let q = '';
+  const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  function toast(t, ms) { const el = document.createElement('div'); el.className = 'toast'; el.textContent = t; document.body.appendChild(el); setTimeout(() => el.remove(), ms || 2600); }
+
+  // ── Tipos ───────────────────────────────────────────────────────────────────
+  const LANG = { md: 'markdown', markdown: 'markdown', txt: 'text', html: 'html', htm: 'html', css: 'css', scss: 'scss', js: 'javascript', mjs: 'javascript', cjs: 'javascript', jsx: 'jsx', ts: 'typescript', tsx: 'tsx', json: 'json', py: 'python', sh: 'bash', bat: 'bat', ps1: 'powershell', yml: 'yaml', yaml: 'yaml', xml: 'xml', svg: 'svg', sql: 'sql', java: 'java', kt: 'kotlin', gradle: 'groovy', php: 'php', rb: 'ruby', go: 'go', rs: 'rust', c: 'c', h: 'c', cpp: 'cpp', cs: 'csharp', vue: 'vue', svelte: 'svelte', toml: 'toml', ini: 'ini', env: 'text', csv: 'csv', docx: 'text' };
+  const ext = (p) => { const b = p.split('/').pop().toLowerCase(); const i = b.lastIndexOf('.'); return i > 0 ? b.slice(i + 1) : ''; };
+  const lang = (p) => LANG[ext(p)] || 'text';
+  const isTexto = (p) => ['markdown', 'text'].includes(lang(p));
+  const BIN = /^(png|jpe?g|gif|webp|ico|bmp|pdf|zip|apk|jar|keystore|jks|mp3|mp4|wav|ogg|webm|woff2?|ttf|otf|eot|exe|dll|so|bin|7z|rar|gz|tgz|mov|avi|psd|xlsx?|pptx?)$/;
+  const bytesFmt = (n) => n < 1024 ? n + ' B' : n < 1048576 ? (n / 1024).toFixed(1).replace('.', ',') + ' KB' : (n / 1048576).toFixed(1).replace('.', ',') + ' MB';
+  const linhas = (t) => t == null ? 0 : (t.match(/\n/g) || []).length + 1;
+
+  function decode(u8) {
+    try { return new TextDecoder('utf-8', { fatal: true }).decode(u8).replace(/^﻿/, ''); }
+    catch { return new TextDecoder('windows-1252').decode(u8); }
+  }
+  function pareceBinario(u8) { const n = Math.min(u8.length, 8000); for (let i = 0; i < n; i++) if (u8[i] === 0) return true; return false; }
+  function b64(u8) { let s = ''; for (let i = 0; i < u8.length; i += 0x8000) s += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000)); return btoa(s); }
+  function unb64(s) { const b = atob(s); const u = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return u; }
+
+  // ── ZIP: ler (sem biblioteca) ───────────────────────────────────────────────
+  async function inflate(u8) {
+    if (typeof DecompressionStream === 'undefined') throw new Error('Este navegador não abre .zip compactado. Atualize o navegador.');
+    const ds = new DecompressionStream('deflate-raw');
+    const out = new Response(new Blob([u8]).stream().pipeThrough(ds));
+    return new Uint8Array(await out.arrayBuffer());
+  }
+  async function lerZip(u8) {
+    const dv = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
+    let eocd = -1;
+    for (let i = u8.length - 22; i >= Math.max(0, u8.length - 65557); i--) if (dv.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+    if (eocd < 0) throw new Error('.zip inválido ou corrompido');
+    let n = dv.getUint16(eocd + 10, true), off = dv.getUint32(eocd + 16, true);
+    if (off === 0xffffffff || n === 0xffff) { const loc = eocd - 20; if (loc >= 0 && dv.getUint32(loc, true) === 0x07064b50) { const z = Number(dv.getBigUint64(loc + 8, true)); n = Number(dv.getBigUint64(z + 32, true)); off = Number(dv.getBigUint64(z + 48, true)); } }
+    const out = [], utf = new TextDecoder('utf-8'), lat = new TextDecoder('windows-1252');
+    let p = off;
+    for (let k = 0; k < n; k++) {
+      if (dv.getUint32(p, true) !== 0x02014b50) break;
+      const flags = dv.getUint16(p + 8, true), method = dv.getUint16(p + 10, true);
+      let csize = dv.getUint32(p + 20, true);
+      const nl = dv.getUint16(p + 28, true), el = dv.getUint16(p + 30, true), cl = dv.getUint16(p + 32, true);
+      let lo = dv.getUint32(p + 42, true);
+      const nameB = u8.subarray(p + 46, p + 46 + nl);
+      const name = (flags & 0x800) ? utf.decode(nameB) : (() => { try { return new TextDecoder('utf-8', { fatal: true }).decode(nameB); } catch { return lat.decode(nameB); } })();
+      if (csize === 0xffffffff || lo === 0xffffffff) { let e = p + 46 + nl; const end = e + el; while (e < end) { const id = dv.getUint16(e, true), sz = dv.getUint16(e + 2, true); if (id === 1) { let q2 = e + 4; if (dv.getUint32(p + 24, true) === 0xffffffff) q2 += 8; if (csize === 0xffffffff) { csize = Number(dv.getBigUint64(q2, true)); q2 += 8; } if (lo === 0xffffffff) lo = Number(dv.getBigUint64(q2, true)); } e += 4 + sz; } }
+      p += 46 + nl + el + cl;
+      if (name.endsWith('/')) continue;
+      const dataStart = lo + 30 + dv.getUint16(lo + 26, true) + dv.getUint16(lo + 28, true);
+      const raw = u8.subarray(dataStart, dataStart + csize);
+      let data;
+      if (method === 0) data = raw.slice();
+      else if (method === 8) data = await inflate(raw);
+      else { out.push({ name, erro: 'compactação não suportada (' + method + ')' }); continue; }
+      out.push({ name, data });
+    }
+    return out;
+  }
+
+  // ── ZIP: escrever (sem compactar, abre em qualquer lugar) ───────────────────
+  const CRC = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+  const crc32 = (u8) => { let c = 0xffffffff; for (let i = 0; i < u8.length; i++) c = CRC[(c ^ u8[i]) & 0xff] ^ (c >>> 8); return (c ^ 0xffffffff) >>> 0; };
+  function escreverZip(files) {
+    const enc = new TextEncoder(), parts = [], central = []; let off = 0;
+    for (const f of files) {
+      const name = enc.encode(f.name), data = f.data, crc = crc32(data);
+      const h = new DataView(new ArrayBuffer(30));
+      h.setUint32(0, 0x04034b50, true); h.setUint16(4, 20, true); h.setUint16(6, 0x800, true); h.setUint16(8, 0, true);
+      h.setUint32(14, crc, true); h.setUint32(18, data.length, true); h.setUint32(22, data.length, true); h.setUint16(26, name.length, true);
+      parts.push(new Uint8Array(h.buffer), name, data);
+      const c = new DataView(new ArrayBuffer(46));
+      c.setUint32(0, 0x02014b50, true); c.setUint16(4, 20, true); c.setUint16(6, 20, true); c.setUint16(8, 0x800, true);
+      c.setUint32(16, crc, true); c.setUint32(20, data.length, true); c.setUint32(24, data.length, true); c.setUint16(28, name.length, true); c.setUint32(42, off, true);
+      central.push(new Uint8Array(c.buffer), name);
+      off += 30 + name.length + data.length;
+    }
+    const csize = central.reduce((a, b) => a + b.length, 0);
+    const e = new DataView(new ArrayBuffer(22));
+    e.setUint32(0, 0x06054b50, true); e.setUint16(8, files.length, true); e.setUint16(10, files.length, true); e.setUint32(12, csize, true); e.setUint32(16, off, true);
+    return new Blob(parts.concat(central, [new Uint8Array(e.buffer)]), { type: 'application/zip' });
+  }
+
+  // ── Word (.docx): só o texto ────────────────────────────────────────────────
+  async function textoDocx(u8) {
+    const ents = await lerZip(u8);
+    const doc = ents.find((e) => e.name === 'word/document.xml');
+    if (!doc || !doc.data) return null;
+    const xml = new TextDecoder('utf-8').decode(doc.data);
+    return xml.replace(/<w:tab\/>/g, '\t').replace(/<w:br[^>]*\/>/g, '\n').replace(/<\/w:p>/g, '\n').replace(/<[^>]+>/g, '')
+      .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, '&').replace(/\n{3,}/g, '\n\n').trim();
+  }
+
+  // ── Importar ────────────────────────────────────────────────────────────────
+  async function addBytes(path, u8) {
+    path = path.replace(/\\/g, '/').replace(/^\/+/, '');
+    const e = ext(path);
+    if (e === 'zip') {
+      try {
+        const ents = await lerZip(u8);
+        const names = ents.map((x) => x.name);
+        const raiz = names.length > 1 && names.every((n) => n.includes('/') && n.split('/')[0] === names[0].split('/')[0]) ? names[0].split('/')[0] + '/' : '';
+        let n = 0;
+        for (const x of ents) {
+          if (/(^|\/)(__MACOSX|node_modules|\.git)\//.test(x.name) || /\.DS_Store$/.test(x.name)) continue;
+          if (x.erro) { toast(x.name + ': ' + x.erro); continue; }
+          await addBytes(x.name.slice(raiz.length), x.data); n++;
+        }
+        toast('📦 ' + path + ': ' + n + ' arquivo(s)');
+      } catch (er) { toast('⚠ ' + path + ': ' + er.message, 5000); }
+      return;
+    }
+    let text = null, bin = null;
+    if (e === 'docx') { try { text = await textoDocx(u8); } catch {} bin = b64(u8); } // guarda o original para o .zip
+    else if (BIN.test(e) || pareceBinario(u8)) bin = b64(u8);
+    else text = decode(u8);
+    const ex = items.find((i) => i.path === path);
+    const rec = { id: ex ? ex.id : uid(), path, text, b64: bin, size: u8.length, on: true, open: false };
+    if (ex) Object.assign(ex, rec); else items.push(rec);
+    // Arquivo gerado por este Juntador? Oferece separar de volta.
+    if (text && /<!-- arquivo: .+? -->/.test(text) && /<!-- fim: .+? -->/.test(text)) setTimeout(() => oferecerSeparar(rec), 200);
+  }
+  async function importar(fileList) {
+    const files = Array.from(fileList || []);
+    if (!files.length) return;
+    toast('Lendo ' + files.length + ' arquivo(s)…', 1500);
+    for (const f of files) await addBytes(f.webkitRelativePath || f.name, new Uint8Array(await f.arrayBuffer()));
+    salvar(); render();
+  }
+  $('#b-add').onclick = () => $('#f-files').click();
+  $('#b-dir').onclick = () => $('#f-dir').click();
+  $('#f-files').onchange = (e) => { importar(e.target.files); e.target.value = ''; };
+  $('#f-dir').onchange = (e) => { importar(e.target.files); e.target.value = ''; };
+  const drop = $('#drop');
+  ['dragenter', 'dragover'].forEach((t) => document.addEventListener(t, (e) => { e.preventDefault(); drop.classList.add('on'); }));
+  ['dragleave', 'drop'].forEach((t) => document.addEventListener(t, (e) => { e.preventDefault(); if (t === 'drop' || e.target === drop) drop.classList.remove('on'); }));
+  document.addEventListener('drop', (e) => importar(e.dataTransfer.files));
+  $('#b-paste').onclick = () => {
+    modal('<h3 style="margin-top:0">📋 Colar texto</h3><input class="inp" id="pn" placeholder="Nome (ex.: pagina.html ou notas.md)" style="width:100%;margin-bottom:8px"><textarea class="inp" id="pt" rows="12" placeholder="Cole aqui"></textarea><div class="row" style="justify-content:flex-end;margin-top:8px"><button class="btn" data-x="0">Cancelar</button><button class="btn p" data-x="1">Adicionar</button></div>',
+      async (m, ok) => { if (!ok) return; const t = $('#pt', m).value; if (!t.trim()) return; let n = $('#pn', m).value.trim() || ('colado-' + (items.length + 1) + '.txt'); if (!ext(n)) n += /^\s*</.test(t) ? '.html' : '.md'; await addBytes(n, new TextEncoder().encode(t)); salvar(); render(); });
+  };
+
+  // ── Guardar no aparelho (não perde ao fechar) ──────────────────────────────
+  let db = null;
+  function idb() { if (db) return db; db = new Promise((res, rej) => { const r = indexedDB.open('juntador', 1); r.onupgradeneeded = () => r.result.createObjectStore('kv'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); return db; }
+  async function salvar() { try { const d = await idb(); d.transaction('kv', 'readwrite').objectStore('kv').put(items.map(({ open, ...x }) => x), 'items'); } catch {} }
+  async function carregar() { try { const d = await idb(); const r = d.transaction('kv').objectStore('kv').get('items'); r.onsuccess = () => { items = (r.result || []).map((x) => Object.assign(x, { open: false })); render(); }; } catch {} }
+
+  // ── Lista ───────────────────────────────────────────────────────────────────
+  function realce(t) {
+    if (!q) return esc(t);
+    const lo = t.toLowerCase(), ql = q.toLowerCase(); let out = '', i = 0, j;
+    while ((j = lo.indexOf(ql, i)) >= 0) { out += esc(t.slice(i, j)) + '<mark>' + esc(t.slice(j, j + q.length)) + '</mark>'; i = j + q.length; }
+    return out + esc(t.slice(i));
+  }
+  function render() {
+    const vis = items.filter((x) => !q || x.path.toLowerCase().includes(q.toLowerCase()) || (x.text && x.text.toLowerCase().includes(q.toLowerCase())));
+    const on = items.filter((x) => x.on);
+    $('#ordem').hidden = !items.length; $('#bar').hidden = !items.length; $('#drop').hidden = items.length > 0;
+    $('#resumo').textContent = items.length ? items.length + ' arquivo(s) · ' + bytesFmt(items.reduce((a, b) => a + b.size, 0)) + (q ? ' · ' + vis.length + ' com "' + q + '"' : '') : '';
+    $('#sel').textContent = on.length + ' marcado(s) · ' + on.reduce((a, b) => a + linhas(b.text), 0).toLocaleString('pt-BR') + ' linhas';
+    $('#lista').innerHTML = vis.map((x) => {
+      const i = items.indexOf(x), tipo = x.text == null ? 'binário' : lang(x.path);
+      const ocorr = q && x.text ? (x.text.toLowerCase().split(q.toLowerCase()).length - 1) : 0;
+      return '<div class="it' + (x.on ? '' : ' off') + '" data-id="' + x.id + '"><div class="it-h">' +
+        '<input type="checkbox" data-a="on"' + (x.on ? ' checked' : '') + ' title="Entra no arquivo final">' +
+        '<div class="nm" data-a="abrir"><b>' + (i + 1) + '. ' + realce(x.path) + '</b><small><span class="tag">' + esc(tipo) + '</span>' + bytesFmt(x.size) + (x.text != null ? ' · ' + linhas(x.text).toLocaleString('pt-BR') + ' linhas' : '') + (ocorr ? ' · ' + ocorr + '× encontrado' : '') + (x.nota ? ' · 📝' : '') + '</small>' + (x.nota && !x.open ? '<small style="display:block">📝 ' + esc(x.nota) + '</small>' : '') + '</div>' +
+        '<div class="mv"><button class="btn s" data-a="topo" title="Para o começo">⤒</button><button class="btn s" data-a="sobe" title="Subir">↑</button><button class="btn s" data-a="desce" title="Descer">↓</button><button class="btn s" data-a="mais" title="Mais">⋯</button></div></div>' +
+        (x.open ? '<div class="body"><textarea class="inp nota" data-a="nota" rows="2" placeholder="📝 O que esse pedaço faz? De onde veio? (vai junto no arquivo final)" style="font-family:inherit;font-size:14px;margin-bottom:6px">' + esc(x.nota || '') + '</textarea>' + (x.text == null ? '<p class="muted small">Arquivo binário (imagem, PDF, zip…). Vai junto no .zip; no arquivo de texto aparece só o nome.</p>' : '<div class="row" style="margin-bottom:6px"><button class="btn s" data-a="copiar">📋 Copiar este</button><button class="btn s" data-a="editar">✏️ Editar</button></div><pre class="code">' + realce(x.text) + '</pre>') + '</div>' : '') +
+        '</div>';
+    }).join('');
+  }
+  $('#q').oninput = (e) => { q = e.target.value.trim(); render(); };
+  $('#lista').addEventListener('input', (e) => { if (e.target.dataset.a !== 'nota') return; const it = items.find((x) => x.id === e.target.closest('[data-id]').dataset.id); if (it) { it.nota = e.target.value; salvarLogo(); } });
+  let tSalvar; const salvarLogo = () => { clearTimeout(tSalvar); tSalvar = setTimeout(salvar, 600); };
+  $('#lista').addEventListener('click', async (e) => {
+    const a = e.target.closest('[data-a]'); if (!a) return;
+    const it = items.find((x) => x.id === a.closest('[data-id]').dataset.id); if (!it) return;
+    const i = items.indexOf(it), act = a.dataset.a;
+    if (act === 'on') { it.on = a.checked; salvar(); render(); return; }
+    if (act === 'nota') return;
+    if (act === 'abrir') it.open = !it.open;
+    if (act === 'sobe' && i > 0) [items[i - 1], items[i]] = [items[i], items[i - 1]];
+    if (act === 'desce' && i < items.length - 1) [items[i + 1], items[i]] = [items[i], items[i + 1]];
+    if (act === 'topo') { items.splice(i, 1); items.unshift(it); }
+    if (act === 'copiar') { await copiar(it.text); }
+    if (act === 'editar') {
+      modal('<h3 style="margin-top:0">✏️ ' + esc(it.path) + '</h3><textarea class="inp" id="et" rows="18"></textarea><div class="row" style="justify-content:flex-end;margin-top:8px"><button class="btn" data-x="0">Cancelar</button><button class="btn p" data-x="1">Salvar</button></div>',
+        (m, ok) => { if (ok) { it.text = $('#et', m).value; it.size = new Blob([it.text]).size; salvar(); render(); } }, (m) => { $('#et', m).value = it.text; });
+      return;
+    }
+    if (act === 'mais') {
+      modal('<h3 style="margin-top:0">' + esc(it.path) + '</h3><div class="row"><button class="btn" data-x="ren">✏️ Renomear / mudar pasta</button><button class="btn" data-x="pos">🔢 Mudar posição</button><button class="btn" data-x="dup">⧉ Duplicar</button><button class="btn" data-x="dl">⤓ Baixar este</button><button class="btn d" data-x="del">🗑 Tirar da lista</button><button class="btn" data-x="0">Fechar</button></div>',
+        async (m, ok, x) => {
+          if (x === 'ren') { const n = prompt('Novo nome (pode ter pasta, ex.: src/app.js):', it.path); if (n && n.trim()) it.path = n.trim().replace(/^\/+/, ''); }
+          if (x === 'pos') { const n = parseInt(prompt('Posição (1 a ' + items.length + '):', String(i + 1)), 10); if (n >= 1 && n <= items.length) { items.splice(items.indexOf(it), 1); items.splice(n - 1, 0, it); } }
+          if (x === 'dup') items.splice(items.indexOf(it) + 1, 0, Object.assign({}, it, { id: uid(), path: it.path.replace(/(\.[^.]+)?$/, '-copia$1'), open: false }));
+          if (x === 'dl') baixar(it.path.split('/').pop(), it.b64 ? new Blob([unb64(it.b64)]) : new Blob([it.text || ''], { type: 'text/plain;charset=utf-8' }));
+          if (x === 'del') items = items.filter((y) => y !== it);
+          salvar(); render();
+        });
+      return;
+    }
+    salvar(); render();
+  });
+  $('#ordem').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-o]'); if (!b) return;
+    const o = b.dataset.o, cmp = (a, c) => a.localeCompare(c, 'pt', { numeric: true });
+    if (o === 'nome') items.sort((a, c) => cmp(a.path.split('/').pop(), c.path.split('/').pop()));
+    if (o === 'pasta') items.sort((a, c) => cmp(a.path, c.path));
+    if (o === 'tipo') items.sort((a, c) => cmp(lang(a.path), lang(c.path)) || cmp(a.path, c.path));
+    if (o === 'tam') items.sort((a, c) => c.size - a.size);
+    if (o === 'inv') items.reverse();
+    salvar(); render();
+  });
+  $('#b-todos').onclick = () => { items.forEach((x) => (x.on = true)); salvar(); render(); };
+  $('#b-nenhum').onclick = () => { items.forEach((x) => (x.on = false)); salvar(); render(); };
+  $('#b-limpar').onclick = () => { if (!confirm('Tirar TODOS os arquivos da lista? (os seus arquivos originais não são apagados)')) return; items = []; salvar(); render(); };
+
+  // ── Gerar o arquivo único ───────────────────────────────────────────────────
+  function cerca(t) { let m = 2, r; const re = /`{3,}/g; while ((r = re.exec(t))) m = Math.max(m, r[0].length); return '`'.repeat(m + 1); }
+  function arvore(paths) {
+    const root = {};
+    paths.forEach((p) => { let n = root; p.split('/').forEach((s, i, a) => { n[s] = n[s] || (i === a.length - 1 ? null : {}); if (n[s]) n = n[s]; }); });
+    const out = [];
+    const walk = (n, pre) => { const ks = Object.keys(n).sort((a, b) => (n[a] === null) - (n[b] === null) || a.localeCompare(b)); ks.forEach((k, i) => { const last = i === ks.length - 1; out.push(pre + (last ? '└── ' : '├── ') + k + (n[k] ? '/' : '')); if (n[k]) walk(n[k], pre + (last ? '    ' : '│   ')); }); };
+    walk(root, ''); return out.join('\n');
+  }
+  function gerarMD(sel, opt) {
+    const total = sel.reduce((a, b) => a + linhas(b.text), 0);
+    let s = '# ' + (opt.titulo || 'Arquivos juntados') + '\n\n';
+    s += '> ' + sel.length + ' arquivo(s) · ' + total.toLocaleString('pt-BR') + ' linhas · gerado em ' + new Date().toLocaleString('pt-BR') + '\n\n';
+    if (opt.indice) s += '## Índice\n\n' + sel.map((x, i) => (i + 1) + '. `' + x.path + '`' + (x.text != null ? ' — ' + linhas(x.text) + ' linhas' : ' — binário') + (x.nota ? ' — ' + x.nota.split('\n')[0] : '')).join('\n') + '\n\n';
+    if (opt.arvore) s += '## Estrutura\n\n```\n' + arvore(sel.map((x) => x.path)) + '\n```\n\n';
+    s += '---\n\n';
+    sel.forEach((x, i) => {
+      s += '<!-- arquivo: ' + x.path + ' -->\n## ' + (i + 1) + '. ' + x.path + '\n\n' + (x.nota ? '> 📝 ' + x.nota.replace(/\n/g, '\n> ') + '\n\n' : '');
+      if (x.text == null) s += '_(arquivo binário, ' + bytesFmt(x.size) + ' — não cabe em texto)_\n\n';
+      else if (opt.textoSolto && isTexto(x.path)) s += x.text.replace(/\s+$/, '') + '\n\n';
+      else { const f = cerca(x.text); s += f + lang(x.path) + '\n' + x.text.replace(/\n$/, '') + '\n' + f + '\n\n'; }
+      s += '<!-- fim: ' + x.path + ' -->\n\n';
+    });
+    return s;
+  }
+  function gerarTXT(sel) {
+    return sel.filter((x) => x.text != null).map((x) => (x.nota ? '/* 📝 ' + x.path + ': ' + x.nota.replace(/\*\//g, '* /') + ' */\n' : '') + '===== ARQUIVO: ' + x.path + ' =====\n' + x.text.replace(/\n$/, '') + '\n===== FIM: ' + x.path + ' =====').join('\n\n') + '\n';
+  }
+  function gerarHTML(sel, opt) {
+    const dados = JSON.stringify(sel.map((x) => ({ p: x.path, t: x.text, l: lang(x.path), n: x.nota || '' }))).replace(/</g, '\\u003c');
+    return '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>' + esc(opt.titulo || 'Arquivos juntados') + '</title>' +
+      '<style>body{margin:0;background:#0f1420;color:#d8deea;font:15px/1.45 system-ui,sans-serif}main{max-width:960px;margin:0 auto;padding:14px}h1{font-size:19px}input{width:100%;font-size:16px;padding:9px;border-radius:9px;border:1px solid #34405e;background:#151b2b;color:#d8deea;margin-bottom:10px}nav a{display:block;color:#8fb8ff;font:13px ui-monospace,monospace;padding:2px 0;text-decoration:none}section{background:#151b2b;border:1px solid #263048;border-radius:10px;margin:10px 0}section h2{font:600 13px ui-monospace,monospace;margin:0;padding:9px 10px;display:flex;gap:8px;align-items:center;word-break:break-all}section h2 span{flex:1}button{font:inherit;font-size:13px;padding:4px 10px;border-radius:7px;border:1px solid #34405e;background:#1b2337;color:#d8deea;cursor:pointer}pre{margin:0;padding:10px;border-top:1px solid #263048;white-space:pre-wrap;word-break:break-word;font:12.5px/1.5 ui-monospace,monospace}</style></head><body><main><h1>' + esc(opt.titulo || 'Arquivos juntados') + '</h1><input id="q" placeholder="🔍 Procurar…"><button id="all">📋 Copiar tudo</button><nav id="nav"></nav><div id="l"></div></main>' +
+      '<script>const D=' + dados + ';const e=s=>String(s==null?"":s).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));' +
+      'function cp(t,b){navigator.clipboard.writeText(t).then(()=>{if(b){const o=b.textContent;b.textContent="✓";setTimeout(()=>b.textContent=o,1200)}}).catch(()=>prompt("Copie:",t))}' +
+      'function r(){const q=document.getElementById("q").value.toLowerCase();const v=D.map((x,i)=>[x,i]).filter(([x])=>!q||x.p.toLowerCase().includes(q)||(x.t||"").toLowerCase().includes(q));' +
+      'document.getElementById("nav").innerHTML=v.map(([x,i])=>\'<a href="#s\'+i+\'">\'+(i+1)+". "+e(x.p)+"</a>").join("");' +
+      'document.getElementById("l").innerHTML=v.map(([x,i])=>\'<section id="s\'+i+\'"><h2><span>\'+(i+1)+". "+e(x.p)+\'</span><button data-i="\'+i+\'">📋 Copiar</button></h2>\'+(x.n?\'<div style="padding:0 10px 8px;color:#f2d27a;font-size:13px">📝 \'+e(x.n)+"</div>":"")+\'<pre>\'+(x.t==null?"(arquivo binário)":e(x.t))+"</pre></section>").join("")}' +
+      'document.getElementById("q").oninput=r;document.getElementById("l").onclick=ev=>{const b=ev.target.closest("[data-i]");if(b)cp(D[+b.dataset.i].t||"",b)};' +
+      'document.getElementById("all").onclick=ev=>cp(D.map(x=>"===== "+x.p+" =====\\n"+(x.t||"(binário)")).join("\\n\\n"),ev.target);r();<\/script></body></html>';
+  }
+  function zipDosArquivos(sel) {
+    const enc = new TextEncoder();
+    const files = sel.map((x) => ({ name: x.path, data: x.b64 ? unb64(x.b64) : enc.encode(x.text || '') }));
+    const notas = sel.filter((x) => x.nota);
+    if (notas.length) files.push({ name: 'LEIA-ME-PEDACOS.md', data: enc.encode('# O que cada pedaço faz\n\n' + notas.map((x) => '- **' + x.path + '** — ' + x.nota.replace(/\n/g, ' ')).join('\n') + '\n') });
+    return escreverZip(files);
+  }
+  function batPastas(sel) {
+    const dirs = [...new Set(sel.map((x) => x.path.split('/').slice(0, -1).join('/')).filter(Boolean).flatMap((d) => d.split('/').map((_, i, a) => a.slice(0, i + 1).join('/'))))].sort();
+    return '@echo off\r\nchcp 65001 >nul\r\ncd /d "%~dp0"\r\n' + dirs.map((d) => 'if not exist "' + d.replace(/\//g, '\\') + '" mkdir "' + d.replace(/\//g, '\\') + '"').join('\r\n') +
+      '\r\n' + sel.map((x) => 'if not exist "' + x.path.replace(/\//g, '\\') + '" type nul > "' + x.path.replace(/\//g, '\\') + '"').join('\r\n') + '\r\necho Pronto: ' + dirs.length + ' pasta(s) e ' + sel.length + ' arquivo(s) vazios criados.\r\npause\r\n';
+  }
+
+  $('#b-gerar').onclick = () => {
+    const sel = items.filter((x) => x.on);
+    if (!sel.length) return toast('Marque pelo menos um arquivo ☑');
+    const pref = JSON.parse(localStorage.getItem('juntador:opt') || '{}');
+    modal('<h3 style="margin-top:0">⤓ Gerar arquivo único</h3><p class="small muted" style="margin-top:0">' + sel.length + ' arquivo(s), na ordem da lista. Nada é cortado.</p>' +
+      '<input class="inp" id="ot" placeholder="Título (opcional)" style="width:100%" value="' + esc(pref.titulo || '') + '">' +
+      '<div class="opts"><b class="small">Formato</b>' +
+      '<label><input type="radio" name="fmt" value="md" checked> <span><b>.md (Markdown)</b> — um arquivo só, com índice. Código vai em blocos (HTML aparece como código, não vira página).</span></label>' +
+      '<label><input type="radio" name="fmt" value="txt"> <span><b>.txt com marcadores</b> <code>===== ARQUIVO: … =====</code> — o ⤵ Montar do Mini SK recria tudo.</span></label>' +
+      '<label><input type="radio" name="fmt" value="html"> <span><b>.html para ler</b> — índice, busca e botão Copiar em cada arquivo.</span></label>' +
+      '<label><input type="radio" name="fmt" value="zip"> <span><b>.zip</b> — os arquivos separados, com os nomes e pastas da lista.</span></label>' +
+      '<label><input type="radio" name="fmt" value="bat"> <span><b>.bat</b> — cria no Windows as pastas e os arquivos vazios dessa estrutura.</span></label>' +
+      '<b class="small">Opções do .md</b>' +
+      '<label><input type="checkbox" id="oi" ' + (pref.indice !== false ? 'checked' : '') + '> <span>Índice no começo</span></label>' +
+      '<label><input type="checkbox" id="oa" ' + (pref.arvore !== false ? 'checked' : '') + '> <span>Desenho da árvore de pastas</span></label>' +
+      '<label><input type="checkbox" id="os" ' + (pref.textoSolto !== false ? 'checked' : '') + '> <span>Arquivos .md e .txt entram como texto normal (não em bloco de código)</span></label></div>' +
+      '<div class="row" style="justify-content:flex-end;margin-top:10px"><button class="btn" data-x="0">Cancelar</button><button class="btn" data-x="copiar">📋 Copiar</button><button class="btn p" data-x="1">⤓ Baixar</button></div>',
+      async (m, ok, x) => {
+        if (!ok && x !== 'copiar') return;
+        const fmt = (m.querySelector('[name=fmt]:checked') || {}).value || 'md';
+        const opt = { titulo: $('#ot', m).value.trim(), indice: $('#oi', m).checked, arvore: $('#oa', m).checked, textoSolto: $('#os', m).checked };
+        localStorage.setItem('juntador:opt', JSON.stringify(opt));
+        const nome = (opt.titulo || 'juntado').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^\w-]+/g, '-').replace(/^-|-$/g, '').toLowerCase() || 'juntado';
+        let blob, texto = null;
+        if (fmt === 'md') texto = gerarMD(sel, opt);
+        if (fmt === 'txt') texto = gerarTXT(sel);
+        if (fmt === 'html') texto = gerarHTML(sel, opt);
+        if (fmt === 'bat') texto = batPastas(sel);
+        if (x === 'copiar') { if (texto == null) return toast('O .zip não dá para copiar; use Baixar.'); return copiar(texto); }
+        blob = fmt === 'zip' ? zipDosArquivos(sel) : new Blob([texto], { type: (fmt === 'html' ? 'text/html' : 'text/plain') + ';charset=utf-8' });
+        baixar(nome + '.' + fmt, blob);
+        toast('⤓ ' + nome + '.' + fmt + ' (' + bytesFmt(blob.size) + ')');
+      });
+  };
+  $('#b-copiar').onclick = () => { const sel = items.filter((x) => x.on); if (!sel.length) return toast('Marque pelo menos um arquivo ☑'); copiar(gerarMD(sel, { indice: true, arvore: true, textoSolto: true })); };
+
+  // ── Separar de volta (arquivo gerado aqui) ─────────────────────────────────
+  function oferecerSeparar(rec) {
+    if (!confirm('"' + rec.path + '" foi gerado pelo Juntador. Separar de volta nos arquivos originais?')) return;
+    const re = /<!-- arquivo: (.+?) -->\n## [^\n]*\n\n([\s\S]*?)\n*<!-- fim: \1 -->/g; let m, n = 0;
+    while ((m = re.exec(rec.text))) {
+      let corpo = m[2], nota = '';
+      const nm = corpo.match(/^> 📝 ([\s\S]*?)\n\n/); if (nm) { nota = nm[1].replace(/\n> /g, '\n'); corpo = corpo.slice(nm[0].length); }
+      const f = corpo.match(/^(`{3,})[^\n]*\n([\s\S]*)\n\1\s*$/);
+      if (f) corpo = f[2] + '\n';
+      if (/^_\(arquivo binário/.test(corpo)) continue;
+      const ex = items.find((i) => i.path === m[1]);
+      const r2 = { id: ex ? ex.id : uid(), path: m[1], text: corpo, b64: null, size: new Blob([corpo]).size, on: true, open: false, nota };
+      if (ex) Object.assign(ex, r2); else items.push(r2);
+      n++;
+    }
+    items = items.filter((i) => i !== rec);
+    salvar(); render(); toast('✂️ Separado em ' + n + ' arquivo(s)');
+  }
+
+  // ── Utilidades ──────────────────────────────────────────────────────────────
+  async function copiar(t) {
+    try { await navigator.clipboard.writeText(t); toast('📋 Copiado (' + linhas(t).toLocaleString('pt-BR') + ' linhas)'); }
+    catch { const ta = document.createElement('textarea'); ta.value = t; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); toast('📋 Copiado'); } catch { toast('Não deu para copiar; use Baixar.'); } ta.remove(); }
+  }
+  function baixar(nome, blob) { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = nome; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 3000); }
+  function modal(html, done, init) {
+    const w = document.createElement('div'); w.className = 'modal'; w.innerHTML = '<div>' + html + '</div>'; document.body.appendChild(w);
+    if (init) init(w);
+    w.addEventListener('click', (e) => { const b = e.target.closest('[data-x]'); if (!b && e.target !== w) return; const x = b ? b.dataset.x : '0'; w.remove(); done(w, x === '1', x); });
+  }
+
+  carregar();
+})();
+</script>
+</body>
+</html>

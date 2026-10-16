@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#53603a">
+<title>Organizador de Documentos</title>
+<style>
+  :root { --bg:#f5f3ee; --bg2:#fffdf8; --bg3:#ece8dc; --line:#ddd8cb; --tx:#2c2f24; --mut:#6f7363; --acc:#53603a; --acc2:#66764a; --ok:#2f7d4f; --bad:#b3261e; --warn:#a86a12; --mono:ui-monospace,"Cascadia Code",Consolas,Menlo,monospace; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#15170f; --bg2:#1d2016; --bg3:#2a2e20; --line:#343929; --tx:#e8e6dc; --mut:#a3a690; --acc:#9db36d; --acc2:#b4c98a; } }
+  * { box-sizing: border-box; } [hidden] { display: none !important; }
+  body { margin: 0; background: var(--bg); color: var(--tx); font: 15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; }
+  header { position: sticky; top: 0; z-index: 6; background: var(--acc); color: #fff; padding: 10px 14px; padding-top: max(10px, env(safe-area-inset-top)); }
+  header h1 { margin: 0; font-size: 17px; }
+  header .sub { font-size: 12px; opacity: .85; }
+  main { max-width: 1100px; margin: 0 auto; padding: 12px 14px 80px; }
+  .card { background: var(--bg2); border: 1px solid var(--line); border-radius: 12px; padding: 12px; margin-bottom: 10px; }
+  .card h2 { font-size: 15px; margin: 0 0 8px; }
+  .row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  .btn { font: inherit; font-size: 14px; padding: 8px 12px; border-radius: 9px; border: 1px solid var(--line); background: var(--bg3); color: var(--tx); cursor: pointer; white-space: nowrap; }
+  .btn.p { background: var(--acc); border-color: var(--acc); color: #fff; font-weight: 600; }
+  .btn.s { padding: 4px 9px; font-size: 13px; }
+  .btn.d { color: var(--bad); }
+  .inp, select.inp { font: inherit; font-size: 15px; padding: 7px 9px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--tx); }
+  .muted { color: var(--mut); } .small { font-size: 12.5px; }
+  .msg { padding: 9px 12px; border-radius: 9px; font-size: 14px; margin: 8px 0; white-space: pre-wrap; }
+  .msg.err { background: #b3261e1a; color: var(--bad); } .msg.ok { background: #2f7d4f1a; color: var(--ok); }
+  .tabs { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 8px; }
+  .tab { font: inherit; font-size: 13.5px; padding: 6px 12px; border-radius: 99px; border: 1px solid var(--line); background: var(--bg3); color: var(--tx); cursor: pointer; }
+  .tab.on { background: var(--acc); border-color: var(--acc); color: #fff; }
+  .scroll { overflow: auto; max-height: 65vh; border: 1px solid var(--line); border-radius: 10px; background: var(--bg2); }
+  table { border-collapse: collapse; font-size: 12.5px; width: max-content; min-width: 100%; }
+  th, td { border-bottom: 1px solid var(--line); padding: 4px 7px; text-align: left; vertical-align: top; white-space: pre; }
+  th { position: sticky; top: 0; background: var(--bg3); z-index: 1; font-weight: 600; }
+  td.n { color: var(--mut); font-family: var(--mono); font-size: 11px; text-align: right; }
+  td.c { font-family: var(--mono); }
+  tr.ign td { opacity: .35; text-decoration: line-through; }
+  tr.dado td { background: #2f7d4f14; }
+  tr.ctx td { background: #a86a1214; }
+  tr.pick { cursor: pointer; } tr.pick:hover td { background: #53603a22; }
+  .tipo { font-size: 10px; padding: 0 5px; border-radius: 5px; background: var(--bg3); border: 1px solid var(--line); margin-left: 3px; font-family: system-ui; }
+  .regra { border: 1px solid var(--line); border-radius: 10px; padding: 8px; margin-bottom: 6px; background: var(--bg); }
+  .regra .row { margin-top: 4px; }
+  .grid2 { display: grid; gap: 8px; grid-template-columns: 1fr; } @media (min-width: 720px) { .grid2 { grid-template-columns: 1fr 1fr; } }
+  textarea.inp { width: 100%; font-family: var(--mono); font-size: 13px; }
+  .pill { font-size: 11px; padding: 1px 7px; border-radius: 99px; background: var(--bg3); border: 1px solid var(--line); }
+  .modal { position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 30; display: flex; align-items: center; justify-content: center; padding: 14px; }
+  .modal > div { background: var(--bg2); border: 1px solid var(--line); border-radius: 14px; padding: 14px; width: 100%; max-width: 640px; max-height: 90vh; overflow: auto; }
+</style>
+</head>
+<body>
+<header><h1>📑 Organizador de Documentos</h1><div class="sub">Importa o PDF, mostra tudo organizado e numerado, e você cria o padrão para baixar no formato que quiser.</div></header>
+<main>
+  <div class="card">
+    <h2>1. Documento</h2>
+    <div class="row">
+      <button class="btn p" id="b-pdf">⤒ Importar PDF</button>
+      <button class="btn" id="b-txt">⤒ Texto / colar</button>
+      <select class="inp" id="padrao-sel" title="Padrão salvo"><option value="">— nenhum padrão —</option></select>
+      <span class="muted small" id="doc-info"></span>
+    </div>
+    <input type="file" id="f-pdf" accept=".pdf,application/pdf" hidden>
+    <div id="status"></div>
+  </div>
+
+  <div id="area" hidden>
+    <div class="tabs" id="tabs">
+      <button class="tab on" data-t="linhas">🔢 Linhas organizadas</button>
+      <button class="tab" data-t="regras">🧩 Padrão (regras)</button>
+      <button class="tab" data-t="resultado">✅ Resultado</button>
+      <button class="tab" data-t="exportar">⤓ Baixar</button>
+    </div>
+
+    <div data-p="linhas">
+      <div class="row small muted" style="margin-bottom:6px">
+        <span>Toque numa linha de dado (ex.: uma competência com valor) para criar uma regra a partir dela.</span>
+        <label class="row"><input type="checkbox" id="so-pag"> separar por página</label>
+        <label class="row">Junção de colunas <input class="inp" id="gap" type="number" min="1" max="30" step="0.5" style="width:70px"></label>
+        <input class="inp" id="q" placeholder="🔍 Procurar…" style="flex:1;min-width:120px">
+      </div>
+      <div class="scroll" id="v-linhas"></div>
+    </div>
+
+    <div data-p="regras" hidden>
+      <div class="card">
+        <div class="row" style="justify-content:space-between"><h2 style="margin:0">Regras do padrão</h2>
+          <div class="row"><button class="btn s" id="r-add-dado">＋ Linha de dados</button><button class="btn s" id="r-add-ign">＋ Ignorar linhas</button><button class="btn s" id="r-add-ctx">＋ Valor de cabeçalho</button></div></div>
+        <p class="small muted">As regras são testadas de cima para baixo, em cada linha. <b>Ignorar</b> tira cabeçalho/rodapé. <b>Linha de dados</b> vira um registro. <b>Valor de cabeçalho</b> (ex.: o órgão, o vínculo) vale para as linhas de dados que vêm depois.</p>
+        <div id="v-regras"></div>
+        <div class="grid2" style="margin-top:8px">
+          <label class="small">Moeda
+            <select class="inp" id="op-moeda" style="width:100%"><option value="data">Descobrir pela data (antes do Real: Cr$, Cz$, NCz$, CR$)</option><option value="texto">Só se estiver escrita no documento</option><option value="nao">Não usar moeda</option></select></label>
+          <label class="small">Formato da competência na saída
+            <select class="inp" id="op-comp" style="width:100%"><option value="MM/AAAA">MM/AAAA (01/2001)</option><option value="AAAA-MM">AAAA-MM (2001-01)</option><option value="DD/MM/AAAA">01/MM/AAAA</option></select></label>
+        </div>
+        <div class="row" style="margin-top:10px">
+          <input class="inp" id="padrao-nome" placeholder="Nome do padrão (ex.: CTC Estado de MG)" style="flex:1;min-width:180px">
+          <button class="btn p" id="padrao-salvar">💾 Salvar padrão</button>
+          <button class="btn" id="padrao-exp">⤓ Exportar padrão</button>
+          <button class="btn" id="padrao-imp">⤒ Importar padrão</button>
+          <button class="btn d" id="padrao-del">🗑</button>
+          <input type="file" id="f-padrao" accept=".json" hidden>
+        </div>
+      </div>
+    </div>
+
+    <div data-p="resultado" hidden>
+      <div class="row small muted" style="margin-bottom:6px" id="res-info"></div>
+      <div class="scroll" id="v-res"></div>
+    </div>
+
+    <div data-p="exportar" hidden>
+      <div class="card">
+        <h2>Formato de saída</h2>
+        <div class="row" style="margin-bottom:8px">
+          <label class="row"><input type="radio" name="fmt" value="csv" checked> Planilha (.csv)</label>
+          <label class="row"><input type="radio" name="fmt" value="json"> JSON</label>
+          <label class="row"><input type="radio" name="fmt" value="modelo"> Meu modelo</label>
+        </div>
+        <div id="modelo-box" hidden>
+          <p class="small muted" style="margin-top:0">Escreva como cada linha deve sair. Use os campos entre chaves. Ex.: <code>{competencia};{valor};{moeda}</code></p>
+          <label class="small">Cabeçalho (primeira linha, opcional)<input class="inp" id="m-cab" style="width:100%" placeholder="Competência;Remuneração;Moeda"></label>
+          <label class="small">Cada linha<input class="inp" id="m-lin" style="width:100%;font-family:var(--mono)" placeholder="{competencia};{valor};{moeda}"></label>
+          <label class="small">Extensão do arquivo <input class="inp" id="m-ext" value="txt" style="width:90px"></label>
+          <div class="small muted" id="m-campos"></div>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <label class="row small">Decimal <select class="inp" id="o-dec"><option value=",">vírgula (1234,56)</option><option value=".">ponto (1234.56)</option></select></label>
+          <label class="row small">Separador do .csv <select class="inp" id="o-sep"><option value=";">;</option><option value=",">,</option><option value="\t">tab</option></select></label>
+        </div>
+        <div class="row" style="margin-top:10px"><button class="btn" id="b-copiar">📋 Copiar</button><button class="btn p" id="b-baixar">⤓ Baixar</button></div>
+        <pre class="scroll" id="previa" style="margin-top:8px;padding:8px;font:12px/1.5 var(--mono);white-space:pre"></pre>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script type="module">
+  // pdf.js (leitura de PDF no próprio navegador, sem IA)
+  const FONTES = [
+    ['https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.min.mjs', 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs'],
+    ['https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.min.mjs', 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.worker.min.mjs'],
+  ];
+  window.carregarPdfJs = async () => {
+    if (window.pdfjsLib) return window.pdfjsLib;
+    let erro;
+    for (const [lib, worker] of FONTES) {
+      try { const m = await import(lib); m.GlobalWorkerOptions.workerSrc = worker; window.pdfjsLib = m; return m; } catch (e) { erro = e; }
+    }
+    throw new Error('Não consegui carregar o leitor de PDF (precisa de internet na primeira vez). ' + (erro ? erro.message : ''));
+  };
+</script>
+<script>
+(function () {
+  'use strict';
+  const $ = (s, r) => (r || document).querySelector(s);
+  const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const store = { get(k, d) { try { const v = localStorage.getItem('org:' + k); return v == null ? d : JSON.parse(v); } catch { return d; } }, set(k, v) { try { localStorage.setItem('org:' + k, JSON.stringify(v)); } catch {} } };
+
+  let doc = null;        // { nome, itens: [{pg, x, y, w, str}] }
+  let linhas = [];       // [{pg, n, y, celulas:[{x, t}], texto}]
+  let regras = [];       // ver novaRegra
+  let resultado = [];
+  let gap = store.get('gap', 6);
+  $('#gap').value = gap;
+
+  // ── Tipos de valor ──────────────────────────────────────────────────────────
+  const MESES = { jan: 1, fev: 2, mar: 3, abr: 4, mai: 5, jun: 6, jul: 7, ago: 8, set: 9, out: 10, nov: 11, dez: 12 };
+  const RE = {
+    data: /^\d{2}\/\d{2}\/\d{4}$/,
+    comp: /^(\d{2})\/(\d{4})$|^(jan|fev|mar|abr|mai|jun|jul|ago|set|out|nov|dez)[a-z]*\/?(\d{2,4})$/i,
+    valor: /^-?(?:R\$|Cr\$|NCr\$|Cz\$|NCz\$|CR\$)?\s*-?\d{1,3}(?:\.\d{3})*,\d{2}$|^-?\d+,\d{2}$/i,
+    num: /^\d+$/,
+    moeda: /^(R\$|Cr\$|NCr\$|Cz\$|NCz\$|CR\$)$/i,
+  };
+  function tipoDe(t) {
+    t = t.trim();
+    if (!t) return 'vazio';
+    if (RE.data.test(t)) return 'data';
+    if (RE.comp.test(t)) return 'competência';
+    if (RE.valor.test(t)) return 'valor';
+    if (RE.moeda.test(t)) return 'moeda';
+    if (RE.num.test(t)) return 'número';
+    return 'texto';
+  }
+  function compDe(t) {
+    t = String(t || '').trim(); let m;
+    if ((m = t.match(/^(\d{2})\/(\d{4})$/))) return { m: +m[1], a: +m[2] };
+    if ((m = t.match(/^\d{2}\/(\d{2})\/(\d{4})$/))) return { m: +m[1], a: +m[2] };
+    if ((m = t.match(/^(jan|fev|mar|abr|mai|jun|jul|ago|set|out|nov|dez)[a-z]*\/?(\d{2,4})$/i))) { let a = +m[2]; if (a < 100) a += a > 40 ? 1900 : 2000; return { m: MESES[m[1].toLowerCase()], a }; }
+    return null;
+  }
+  function numDe(t) {
+    const s = String(t || '').replace(/(R\$|Cr\$|NCr\$|Cz\$|NCz\$|CR\$)/gi, '').trim();
+    if (!/\d/.test(s)) return null;
+    const n = parseFloat(s.replace(/\./g, '').replace(',', '.'));
+    return isNaN(n) ? null : n;
+  }
+  // Moeda brasileira pela data (competência)
+  function moedaPorData(c) {
+    if (!c) return '';
+    const v = c.a * 100 + c.m;
+    if (v < 196702) return 'Cr$ (antigo)';
+    if (v < 197005) return 'NCr$';
+    if (v < 198603) return 'Cr$';
+    if (v < 198901) return 'Cz$';
+    if (v < 199003) return 'NCz$';
+    if (v < 199308) return 'Cr$';
+    if (v < 199407) return 'CR$';
+    return 'R$';
+  }
+
+  // ── Ler PDF por posição (o "motor": junta linhas pela altura e colunas pelo espaço) ──
+  async function lerPdf(file) {
+    const pdfjs = await window.carregarPdfJs();
+    const pdf = await pdfjs.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise;
+    const itens = [];
+    for (let p = 1; p <= pdf.numPages; p++) {
+      const page = await pdf.getPage(p);
+      const vp = page.getViewport({ scale: 1 });
+      const tc = await page.getTextContent();
+      for (const it of tc.items) {
+        if (!it.str || !it.str.trim()) continue;
+        const [a, b, c, d, x, y] = it.transform;
+        const h = Math.hypot(c, d) || Math.abs(d) || 10;
+        itens.push({ pg: p, x, y: vp.height - y, w: it.width || it.str.length * h * 0.5, h, str: it.str });
+      }
+    }
+    return { nome: file.name, paginas: pdf.numPages, itens };
+  }
+  function organizar() {
+    if (!doc) return;
+    const porPg = {};
+    doc.itens.forEach((it) => (porPg[it.pg] = porPg[it.pg] || []).push(it));
+    linhas = [];
+    let n = 0;
+    Object.keys(porPg).map(Number).sort((a, b) => a - b).forEach((pg) => {
+      const its = porPg[pg].slice().sort((a, b) => a.y - b.y || a.x - b.x);
+      const grupos = [];
+      for (const it of its) {
+        const g = grupos.find((gr) => Math.abs(gr.y - it.y) <= Math.max(2, it.h * 0.45));
+        if (g) { g.itens.push(it); g.y = (g.y * (g.itens.length - 1) + it.y) / g.itens.length; } else grupos.push({ y: it.y, itens: [it] });
+      }
+      grupos.sort((a, b) => a.y - b.y).forEach((g) => {
+        const ord = g.itens.sort((a, b) => a.x - b.x);
+        const cel = [];
+        for (const it of ord) {
+          const ult = cel[cel.length - 1];
+          const espaco = ult ? it.x - (ult.fim) : Infinity;
+          if (ult && espaco < gap) { ult.t += (espaco > 1 ? ' ' : '') + it.str; ult.fim = it.x + it.w; }
+          else cel.push({ x: it.x, fim: it.x + it.w, t: it.str });
+        }
+        cel.forEach((c) => (c.t = c.t.replace(/\s+/g, ' ').trim()));
+        const celulas = cel.filter((c) => c.t);
+        if (!celulas.length) return;
+        linhas.push({ pg, n: ++n, y: g.y, celulas, texto: celulas.map((c) => c.t).join(' ') });
+      });
+    });
+  }
+  function deTexto(nome, texto) {
+    // Texto colado: colunas separadas por tab ou 2+ espaços
+    linhas = []; let n = 0;
+    texto.split(/\r?\n/).forEach((l) => {
+      if (!l.trim()) return;
+      const partes = l.split(/\t| {2,}/).map((s) => s.trim()).filter(Boolean);
+      linhas.push({ pg: 1, n: ++n, y: n, celulas: partes.map((t, i) => ({ x: i * 100, t })), texto: partes.join(' ') });
+    });
+    doc = { nome, paginas: 1, itens: null };
+  }
+
+  // ── Regras ──────────────────────────────────────────────────────────────────
+  // dado:  { tipo:'dado', molde:['competência','valor',...], campos:['competencia','valor',...], minCel }
+  // ign:   { tipo:'ign', contem:'texto' }
+  // ctx:   { tipo:'ctx', contem:'Órgão:', campo:'orgao', pega:'resto'|'proxima' }
+  const CAMPOS = ['(ignorar)', 'competencia', 'data_inicio', 'data_fim', 'valor', 'moeda', 'orgao', 'vinculo', 'cargo', 'dias', 'observacao', 'outro'];
+  function moldeDe(l) { return l.celulas.map((c) => tipoDe(c.t)); }
+  function bate(l, r) {
+    if (r.tipo === 'ign' || r.tipo === 'ctx') return r.contem && l.texto.toLowerCase().includes(r.contem.toLowerCase());
+    if (r.tipo === 'dado') {
+      const m = moldeDe(l);
+      if (m.length < r.molde.length) return false;
+      // os tipos "fortes" (data, competência, valor, número) precisam bater; texto é livre
+      return r.molde.every((t, i) => t === 'texto' || t === 'vazio' || m[i] === t || (t === 'valor' && m[i] === 'número'));
+    }
+    return false;
+  }
+  function aplicar() {
+    resultado = [];
+    const ctx = {};
+    let pendente = null;
+    const modoMoeda = $('#op-moeda').value;
+    for (const l of linhas) {
+      l.estado = '';
+      if (pendente) { ctx[pendente] = l.texto; pendente = null; l.estado = 'ctx'; continue; }
+      const r = regras.find((x) => bate(l, x));
+      if (!r) continue;
+      if (r.tipo === 'ign') { l.estado = 'ign'; continue; }
+      if (r.tipo === 'ctx') {
+        l.estado = 'ctx';
+        if (r.pega === 'proxima') pendente = r.campo;
+        else { const i = l.texto.toLowerCase().indexOf(r.contem.toLowerCase()); ctx[r.campo] = l.texto.slice(i + r.contem.length).replace(/^[\s:–-]+/, '').trim(); }
+        continue;
+      }
+      l.estado = 'dado';
+      const rec = Object.assign({}, ctx, { _pg: l.pg, _linha: l.n });
+      r.campos.forEach((campo, i) => {
+        if (!campo || campo === '(ignorar)' || !l.celulas[i]) return;
+        const t = l.celulas[i].t;
+        rec[campo] = rec[campo] ? rec[campo] + ' ' + t : t;
+      });
+      // normalizações
+      if (rec.competencia) { const c = compDe(rec.competencia); if (c) { rec._comp = c; } }
+      if (!rec._comp && rec.data_inicio) { const c = compDe(rec.data_inicio); if (c) rec._comp = c; }
+      if (rec.valor != null) {
+        const mt = String(rec.valor).match(/(NCr\$|NCz\$|Cr\$|Cz\$|CR\$|R\$)/i);
+        if (mt && !rec.moeda) rec.moeda = mt[1];
+        rec._valor = numDe(rec.valor);
+      }
+      if (!rec.moeda && modoMoeda === 'data' && rec._comp) rec.moeda = moedaPorData(rec._comp);
+      if (modoMoeda === 'nao') delete rec.moeda;
+      resultado.push(rec);
+    }
+  }
+  function camposUsados() {
+    const s = new Set();
+    regras.forEach((r) => { if (r.tipo === 'dado') r.campos.forEach((c) => c && c !== '(ignorar)' && s.add(c)); if (r.tipo === 'ctx') s.add(r.campo); });
+    if ($('#op-moeda').value !== 'nao') s.add('moeda');
+    const ordem = ['competencia', 'data_inicio', 'data_fim', 'valor', 'moeda', 'orgao', 'vinculo', 'cargo', 'dias', 'observacao', 'outro'];
+    return ordem.filter((c) => s.has(c)).concat([...s].filter((c) => !ordem.includes(c)));
+  }
+
+  // ── Telas ───────────────────────────────────────────────────────────────────
+  function status(t, k) { $('#status').innerHTML = t ? '<div class="msg ' + (k || '') + '">' + t + '</div>' : ''; }
+  let aba = 'linhas';
+  $('#tabs').onclick = (e) => { const b = e.target.closest('[data-t]'); if (!b) return; aba = b.dataset.t; $$('#tabs .tab').forEach((x) => x.classList.toggle('on', x === b)); $$('[data-p]').forEach((p) => (p.hidden = p.dataset.p !== aba)); tudo(); };
+
+  function tudo() { aplicar(); renderLinhas(); renderRegras(); renderRes(); renderExport(); }
+
+  function renderLinhas() {
+    if (aba !== 'linhas') return;
+    const q = $('#q').value.trim().toLowerCase();
+    const maxC = Math.max(1, ...linhas.map((l) => l.celulas.length));
+    const porPg = $('#so-pag').checked;
+    let h = '<table><tr><th>Pg</th><th>Nº</th>' + Array.from({ length: maxC }, (_, i) => '<th>Col ' + (i + 1) + '</th>').join('') + '</tr>';
+    let pgAnt = 0;
+    for (const l of linhas) {
+      if (q && !l.texto.toLowerCase().includes(q)) continue;
+      if (porPg && l.pg !== pgAnt) { h += '<tr><td colspan="' + (maxC + 2) + '" style="background:var(--bg3);font-weight:600">Página ' + l.pg + '</td></tr>'; pgAnt = l.pg; }
+      h += '<tr class="pick ' + (l.estado || '') + '" data-n="' + l.n + '"><td class="n">' + l.pg + '</td><td class="n">' + l.n + '</td>' +
+        Array.from({ length: maxC }, (_, i) => { const c = l.celulas[i]; return '<td class="c">' + (c ? esc(c.t) + (tipoDe(c.t) !== 'texto' ? '<span class="tipo">' + tipoDe(c.t) + '</span>' : '') : '') + '</td>'; }).join('') + '</tr>';
+    }
+    $('#v-linhas').innerHTML = h + '</table>';
+  }
+  $('#v-linhas').addEventListener('click', (e) => {
+    const tr = e.target.closest('tr[data-n]'); if (!tr) return;
+    const l = linhas.find((x) => x.n === +tr.dataset.n); if (!l) return;
+    escolherRegra(l);
+  });
+  function escolherRegra(l) {
+    modal('<h3 style="margin-top:0">Linha ' + l.n + '</h3><p class="small" style="font-family:var(--mono)">' + esc(l.texto) + '</p>' +
+      '<p class="small muted">O que é esta linha?</p><div class="row">' +
+      '<button class="btn p" data-x="dado">📊 É uma linha de dados (registro)</button>' +
+      '<button class="btn" data-x="ign">🚫 Ignorar linhas como esta</button>' +
+      '<button class="btn" data-x="ctx">🏷 É um cabeçalho (vale para as próximas)</button>' +
+      '<button class="btn" data-x="0">Cancelar</button></div>', (w, x) => {
+      if (x === 'dado') {
+        const molde = moldeDe(l);
+        const sug = molde.map((t, i) => t === 'competência' ? 'competencia' : t === 'data' ? (molde.slice(0, i).includes('data') ? 'data_fim' : 'data_inicio') : t === 'valor' ? (molde.slice(0, i).includes('valor') ? 'outro' : 'valor') : t === 'moeda' ? 'moeda' : '(ignorar)');
+        regras.push({ tipo: 'dado', molde, campos: sug, exemplo: l.texto });
+        status('✅ Regra criada. Confira em 🧩 Padrão quais colunas são o quê.', 'ok');
+      }
+      if (x === 'ign') {
+        const sug = l.celulas[0] ? l.celulas[0].t : l.texto;
+        const t = prompt('Ignorar toda linha que contém o texto:', sug.slice(0, 60));
+        if (t) regras.unshift({ tipo: 'ign', contem: t });
+      }
+      if (x === 'ctx') {
+        const t = prompt('Texto que marca esse cabeçalho (ex.: "Órgão:"):', (l.celulas[0] || {}).t || '');
+        if (!t) return;
+        const campo = prompt('Nome do campo (ex.: orgao, vinculo, cargo):', 'orgao') || 'orgao';
+        const pega = confirm('O valor está na MESMA linha, depois de "' + t + '"?\n\nOK = mesma linha · Cancelar = está na linha de baixo') ? 'resto' : 'proxima';
+        regras.unshift({ tipo: 'ctx', contem: t, campo: campo.trim(), pega });
+      }
+      tudo();
+    });
+  }
+
+  function renderRegras() {
+    if (aba !== 'regras') return;
+    if (!regras.length) { $('#v-regras').innerHTML = '<p class="muted small">Nenhuma regra ainda. Vá em 🔢 Linhas e toque numa linha de dados.</p>'; return; }
+    $('#v-regras').innerHTML = regras.map((r, i) => {
+      const n = linhas.filter((l) => bate(l, r)).length;
+      let h = '<div class="regra" data-i="' + i + '"><div class="row" style="justify-content:space-between"><b>' + (r.tipo === 'dado' ? '📊 Linha de dados' : r.tipo === 'ign' ? '🚫 Ignorar' : '🏷 Cabeçalho') + '</b><span class="pill">' + n + ' linha(s)</span>' +
+        '<span class="row"><button class="btn s" data-a="sobe">↑</button><button class="btn s" data-a="desce">↓</button><button class="btn s d" data-a="del">🗑</button></span></div>';
+      if (r.tipo === 'dado') {
+        h += '<div class="small muted" style="font-family:var(--mono);margin:4px 0">ex.: ' + esc(r.exemplo || '') + '</div>';
+        h += '<div class="row">' + r.molde.map((t, k) => '<label class="small" style="display:flex;flex-direction:column">Col ' + (k + 1) + ' <span class="muted">(' + t + ')</span><select class="inp" data-a="campo" data-k="' + k + '">' + CAMPOS.map((c) => '<option' + (c === r.campos[k] ? ' selected' : '') + '>' + c + '</option>').join('') + '</select></label>').join('') + '</div>';
+      }
+      if (r.tipo === 'ign') h += '<div class="row small">contém <input class="inp" data-a="contem" value="' + esc(r.contem) + '" style="flex:1"></div>';
+      if (r.tipo === 'ctx') h += '<div class="row small">contém <input class="inp" data-a="contem" value="' + esc(r.contem) + '" style="flex:1"> → campo <input class="inp" data-a="campoctx" value="' + esc(r.campo) + '" style="width:110px"> <select class="inp" data-a="pega"><option value="resto"' + (r.pega === 'resto' ? ' selected' : '') + '>mesma linha</option><option value="proxima"' + (r.pega === 'proxima' ? ' selected' : '') + '>linha de baixo</option></select></div>';
+      return h + '</div>';
+    }).join('');
+  }
+  $('#v-regras').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-a]'); if (!b || b.tagName === 'SELECT' || b.tagName === 'INPUT') return;
+    const i = +b.closest('[data-i]').dataset.i;
+    if (b.dataset.a === 'del') regras.splice(i, 1);
+    if (b.dataset.a === 'sobe' && i > 0) [regras[i - 1], regras[i]] = [regras[i], regras[i - 1]];
+    if (b.dataset.a === 'desce' && i < regras.length - 1) [regras[i + 1], regras[i]] = [regras[i], regras[i + 1]];
+    tudo();
+  });
+  $('#v-regras').addEventListener('change', (e) => {
+    const el = e.target, box = el.closest('[data-i]'); if (!box) return;
+    const r = regras[+box.dataset.i];
+    if (el.dataset.a === 'campo') r.campos[+el.dataset.k] = el.value;
+    if (el.dataset.a === 'contem') r.contem = el.value;
+    if (el.dataset.a === 'campoctx') r.campo = el.value.trim() || 'outro';
+    if (el.dataset.a === 'pega') r.pega = el.value;
+    tudo();
+  });
+  $('#r-add-ign').onclick = () => { const t = prompt('Ignorar linhas que contêm:'); if (t) { regras.unshift({ tipo: 'ign', contem: t }); tudo(); } };
+  $('#r-add-ctx').onclick = () => { const t = prompt('Texto que marca o cabeçalho (ex.: "Órgão:"):'); if (!t) return; const c = prompt('Nome do campo:', 'orgao') || 'orgao'; regras.unshift({ tipo: 'ctx', contem: t, campo: c, pega: 'resto' }); tudo(); };
+  $('#r-add-dado').onclick = () => { aba = 'linhas'; $$('#tabs .tab').forEach((x) => x.classList.toggle('on', x.dataset.t === 'linhas')); $$('[data-p]').forEach((p) => (p.hidden = p.dataset.p !== 'linhas')); tudo(); status('Toque numa linha de dados para criar a regra a partir dela.'); };
+  ['#op-moeda', '#op-comp'].forEach((s) => $(s).addEventListener('change', tudo));
+
+  function fmtComp(c, f) {
+    if (!c) return '';
+    const mm = String(c.m).padStart(2, '0');
+    return f === 'AAAA-MM' ? c.a + '-' + mm : f === 'DD/MM/AAAA' ? '01/' + mm + '/' + c.a : mm + '/' + c.a;
+  }
+  function saida(rec, dec) {
+    const o = {};
+    for (const c of camposUsados()) {
+      let v = rec[c];
+      if (c === 'competencia') v = rec._comp ? fmtComp(rec._comp, $('#op-comp').value) : (v || '');
+      else if (c === 'valor') v = rec._valor != null ? rec._valor.toFixed(2).replace('.', dec) : (v || '');
+      o[c] = v == null ? '' : String(v);
+    }
+    return o;
+  }
+  function renderRes() {
+    if (aba !== 'resultado') return;
+    const cols = camposUsados();
+    const comps = resultado.filter((r) => r._comp).map((r) => r._comp.a * 12 + r._comp.m - 1).sort((a, b) => a - b);
+    let faltam = [];
+    if (comps.length > 1) { const set = new Set(comps); for (let k = comps[0]; k <= comps[comps.length - 1]; k++) if (!set.has(k)) faltam.push(String((k % 12) + 1).padStart(2, '0') + '/' + Math.floor(k / 12)); }
+    const dup = comps.filter((c, i) => i && c === comps[i - 1]).length;
+    const total = resultado.reduce((a, r) => a + (r._valor && (!r.moeda || r.moeda === 'R$') ? r._valor : 0), 0);
+    $('#res-info').innerHTML = '<b>' + resultado.length + ' registro(s)</b>' + (comps.length ? ' · de ' + fmtComp({ m: comps[0] % 12 + 1, a: Math.floor(comps[0] / 12) }) + ' a ' + fmtComp({ m: comps[comps.length - 1] % 12 + 1, a: Math.floor(comps[comps.length - 1] / 12) }) : '') +
+      (faltam.length ? ' · <span style="color:var(--warn)">⚠ ' + faltam.length + ' mês(es) faltando</span>' : '') + (dup ? ' · <span style="color:var(--warn)">⚠ ' + dup + ' competência(s) repetida(s)</span>' : '') + (total ? ' · soma em R$: ' + total.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : '');
+    if (!resultado.length) { $('#v-res').innerHTML = '<p class="muted small" style="padding:10px">Nada ainda. Crie uma regra de "Linha de dados".</p>'; return; }
+    $('#v-res').innerHTML = '<table><tr><th>Pg/Linha</th>' + cols.map((c) => '<th>' + esc(c) + '</th>').join('') + '</tr>' +
+      resultado.map((r) => { const o = saida(r, ','); return '<tr><td class="n">' + r._pg + '/' + r._linha + '</td>' + cols.map((c) => '<td class="c">' + esc(o[c]) + '</td>').join('') + '</tr>'; }).join('') + '</table>' +
+      (faltam.length ? '<p class="small" style="padding:8px;color:var(--warn)">Meses faltando: ' + faltam.join(', ') + '</p>' : '');
+  }
+
+  // ── Exportar ────────────────────────────────────────────────────────────────
+  function gerar() {
+    const fmt = ($('[name=fmt]:checked') || {}).value || 'csv';
+    const dec = $('#o-dec').value, cols = camposUsados();
+    if (fmt === 'json') return { texto: JSON.stringify(resultado.map((r) => Object.assign(saida(r, '.'), { pagina: r._pg, linha: r._linha })), null, 2), ext: 'json', tipo: 'application/json' };
+    if (fmt === 'modelo') {
+      const lin = $('#m-lin').value || cols.map((c) => '{' + c + '}').join(';');
+      const corpo = resultado.map((r) => { const o = saida(r, dec); return lin.replace(/\{(\w+)\}/g, (_, k) => o[k] != null ? o[k] : k === 'pagina' ? r._pg : k === 'linha' ? r._linha : ''); });
+      const cab = $('#m-cab').value;
+      return { texto: (cab ? cab + '\r\n' : '') + corpo.join('\r\n') + '\r\n', ext: ($('#m-ext').value || 'txt').replace(/^\./, ''), tipo: 'text/plain' };
+    }
+    const sep = $('#o-sep').value === '\\t' ? '\t' : $('#o-sep').value;
+    const q = (v) => /["\n\r]/.test(v) || v.includes(sep) ? '"' + v.replace(/"/g, '""') + '"' : v;
+    return { texto: '﻿' + [cols.join(sep)].concat(resultado.map((r) => { const o = saida(r, dec); return cols.map((c) => q(o[c])).join(sep); })).join('\r\n') + '\r\n', ext: 'csv', tipo: 'text/csv' };
+  }
+  function renderExport() {
+    if (aba !== 'exportar') return;
+    $('#modelo-box').hidden = (($('[name=fmt]:checked') || {}).value) !== 'modelo';
+    $('#m-campos').innerHTML = 'Campos: ' + camposUsados().concat(['pagina', 'linha']).map((c) => '<code>{' + c + '}</code>').join(' ');
+    $('#previa').textContent = resultado.length ? gerar().texto.replace(/^﻿/, '') : '(nada para exportar ainda)';
+  }
+  $$('[name=fmt]').forEach((r) => r.addEventListener('change', renderExport));
+  ['#m-cab', '#m-lin', '#m-ext', '#o-dec', '#o-sep'].forEach((s) => $(s).addEventListener('input', renderExport));
+  $('#b-baixar').onclick = () => {
+    if (!resultado.length) return status('Nada para baixar ainda.', 'err');
+    const g = gerar(); const nome = (doc ? doc.nome.replace(/\.[^.]+$/, '') : 'documento') + '-organizado.' + g.ext;
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([g.texto], { type: g.tipo + ';charset=utf-8' })); a.download = nome; document.body.appendChild(a); a.click(); a.remove();
+  };
+  $('#b-copiar').onclick = async () => { const g = gerar(); try { await navigator.clipboard.writeText(g.texto.replace(/^﻿/, '')); status('📋 Copiado', 'ok'); } catch { status('Não deu para copiar; use Baixar.', 'err'); } };
+
+  // ── Padrões salvos ──────────────────────────────────────────────────────────
+  const padroes = () => store.get('padroes', {});
+  function renderPadroes(sel) {
+    const p = padroes();
+    $('#padrao-sel').innerHTML = '<option value="">— nenhum padrão —</option>' + Object.keys(p).sort().map((n) => '<option' + (n === sel ? ' selected' : '') + '>' + esc(n) + '</option>').join('');
+  }
+  function padraoAtual() { return { regras, gap, moeda: $('#op-moeda').value, comp: $('#op-comp').value, fmt: (($('[name=fmt]:checked') || {}).value), modelo: { cab: $('#m-cab').value, lin: $('#m-lin').value, ext: $('#m-ext').value }, dec: $('#o-dec').value, sep: $('#o-sep').value }; }
+  function usarPadrao(p) {
+    regras = JSON.parse(JSON.stringify(p.regras || []));
+    if (p.gap) { gap = p.gap; $('#gap').value = gap; }
+    if (p.moeda) $('#op-moeda').value = p.moeda;
+    if (p.comp) $('#op-comp').value = p.comp;
+    if (p.fmt) { const r = $('[name=fmt][value="' + p.fmt + '"]'); if (r) r.checked = true; }
+    if (p.modelo) { $('#m-cab').value = p.modelo.cab || ''; $('#m-lin').value = p.modelo.lin || ''; $('#m-ext').value = p.modelo.ext || 'txt'; }
+    if (p.dec) $('#o-dec').value = p.dec; if (p.sep) $('#o-sep').value = p.sep;
+    if (doc && doc.itens) organizar();
+    tudo();
+  }
+  $('#padrao-salvar').onclick = () => {
+    const n = $('#padrao-nome').value.trim() || $('#padrao-sel').value;
+    if (!n) return status('Dê um nome para o padrão.', 'err');
+    const p = padroes(); p[n] = padraoAtual(); store.set('padroes', p); renderPadroes(n); status('💾 Padrão "' + esc(n) + '" salvo. Da próxima vez: importe o PDF e escolha o padrão.', 'ok');
+  };
+  $('#padrao-sel').onchange = (e) => { const p = padroes()[e.target.value]; if (p) { $('#padrao-nome').value = e.target.value; usarPadrao(p); status('Padrão "' + esc(e.target.value) + '" aplicado.', 'ok'); } };
+  $('#padrao-del').onclick = () => { const n = $('#padrao-sel').value; if (!n || !confirm('Apagar o padrão "' + n + '"?')) return; const p = padroes(); delete p[n]; store.set('padroes', p); renderPadroes(); };
+  $('#padrao-exp').onclick = () => { const n = $('#padrao-nome').value.trim() || 'padrao'; const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify({ nome: n, padrao: padraoAtual() }, null, 2)], { type: 'application/json' })); a.download = n.replace(/[^\w-]+/g, '-') + '.padrao.json'; a.click(); };
+  $('#padrao-imp').onclick = () => $('#f-padrao').click();
+  $('#f-padrao').onchange = async (e) => {
+    const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+    try { const j = JSON.parse(await f.text()); const n = j.nome || f.name.replace(/\.padrao\.json$|\.json$/, ''); const p = padroes(); p[n] = j.padrao || j; store.set('padroes', p); renderPadroes(n); $('#padrao-nome').value = n; usarPadrao(p[n]); status('⤒ Padrão "' + esc(n) + '" importado.', 'ok'); }
+    catch (er) { status('Arquivo de padrão inválido: ' + esc(er.message), 'err'); }
+  };
+
+  // ── Importar ────────────────────────────────────────────────────────────────
+  $('#b-pdf').onclick = () => $('#f-pdf').click();
+  $('#f-pdf').onchange = async (e) => {
+    const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+    status('Lendo o PDF…');
+    try {
+      doc = await lerPdf(f);
+      if (!doc.itens.length) { status('⚠ Esse PDF não tem texto (é imagem/escaneado). Ele precisa de OCR antes.', 'err'); return; }
+      organizar(); depoisDeAbrir();
+      status('✅ ' + esc(f.name) + ': ' + doc.paginas + ' página(s), ' + linhas.length + ' linhas.', 'ok');
+    } catch (er) { status('⚠ ' + esc(er.message), 'err'); }
+  };
+  $('#b-txt').onclick = () => {
+    modal('<h3 style="margin-top:0">Texto do documento</h3><p class="small muted">Cole o texto (colunas separadas por TAB ou 2+ espaços), ou abra um .txt/.csv.</p><textarea class="inp" id="tx" rows="12"></textarea><input type="file" id="txf" accept=".txt,.csv,.tsv,text/*"><div class="row" style="justify-content:flex-end;margin-top:8px"><button class="btn" data-x="0">Cancelar</button><button class="btn p" data-x="1">Usar</button></div>',
+      (w, x) => { if (x !== '1') return; const t = $('#tx', w).value; if (!t.trim()) return; deTexto('texto-colado', t); depoisDeAbrir(); status('✅ ' + linhas.length + ' linhas.', 'ok'); },
+      (w) => { $('#txf', w).onchange = async (ev) => { const f = ev.target.files[0]; if (f) $('#tx', w).value = await f.text(); }; });
+  };
+  function depoisDeAbrir() {
+    $('#area').hidden = false;
+    $('#doc-info').textContent = doc ? doc.nome + ' · ' + linhas.length + ' linhas' : '';
+    tudo();
+  }
+  $('#q').oninput = renderLinhas;
+  $('#so-pag').onchange = renderLinhas;
+  $('#gap').onchange = (e) => { gap = Math.max(1, +e.target.value || 6); store.set('gap', gap); if (doc && doc.itens) { organizar(); tudo(); } };
+
+  function modal(html, done, init) {
+    const w = document.createElement('div'); w.className = 'modal'; w.innerHTML = '<div>' + html + '</div>'; document.body.appendChild(w);
+    if (init) init(w);
+    w.addEventListener('click', (e) => { const b = e.target.closest('[data-x]'); if (!b && e.target !== w) return; const x = b ? b.dataset.x : '0'; w.remove(); done(w, x); });
+  }
+  renderPadroes();
+  window.__org = { get linhas() { return linhas; }, get regras() { return regras; }, get resultado() { return resultado; }, moedaPorData, compDe };
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#53603a">
+<title>Comunicações Processuais</title>
+<style>
+  :root {
+    --bg: #f5f3ee; --card: #fffdf8; --line: #ddd8cb; --tx: #2c2f24; --mut: #6f7363;
+    --acc: #53603a; --acc2: #66764a; --ok: #2f7d4f; --warn: #a86a12; --bad: #b3261e; --chip: #ece8dc;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #15170f; --card: #1d2016; --line: #343929; --tx: #e8e6dc; --mut: #a3a690; --acc: #9db36d; --acc2: #b4c98a; --chip: #2a2e20; }
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body { margin: 0; background: var(--bg); color: var(--tx); font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  header { position: sticky; top: 0; z-index: 5; background: var(--acc); color: #fff; padding: 12px 16px; padding-top: max(12px, env(safe-area-inset-top)); display: flex; align-items: center; gap: 10px; }
+  header h1 { font-size: 17px; margin: 0; flex: 1; }
+  header button { background: rgba(255,255,255,.15); color: #fff; border: 0; border-radius: 8px; padding: 6px 10px; font-size: 13px; cursor: pointer; }
+  main { max-width: 860px; margin: 0 auto; padding: 14px 16px 40px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px; margin-bottom: 12px; }
+  label { display: block; font-size: 12px; color: var(--mut); margin-bottom: 3px; }
+  input, select { width: 100%; font: inherit; font-size: 16px; padding: 9px 10px; border-radius: 9px; border: 1px solid var(--line); background: var(--bg); color: var(--tx); }
+  .grid { display: grid; gap: 10px; grid-template-columns: 1fr; }
+  @media (min-width: 620px) { .g3 { grid-template-columns: 2fr 1fr 2fr; } .g2 { grid-template-columns: 1fr 1fr; } }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .btn { font: inherit; font-size: 14px; padding: 9px 14px; border-radius: 9px; border: 1px solid var(--line); background: var(--chip); color: var(--tx); cursor: pointer; }
+  .btn.primary { background: var(--acc); border-color: var(--acc); color: #fff; font-weight: 600; }
+  .btn.sm { padding: 5px 10px; font-size: 13px; }
+  .btn:disabled { opacity: .6; cursor: default; }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .chip { font-size: 12px; padding: 4px 10px; border-radius: 99px; background: var(--chip); border: 1px solid var(--line); cursor: pointer; color: var(--tx); }
+  .chip.on { background: var(--acc); color: #fff; border-color: var(--acc); }
+  .muted { color: var(--mut); } .small { font-size: 12.5px; }
+  .msg { padding: 10px 12px; border-radius: 10px; font-size: 14px; }
+  .msg.err { background: #b3261e1a; color: var(--bad); } .msg.ok { background: #2f7d4f1a; color: var(--ok); }
+  .item { border: 1px solid var(--line); border-radius: 12px; background: var(--card); margin-bottom: 8px; overflow: hidden; }
+  .item.nova { border-left: 4px solid var(--acc); }
+  .item.lida { opacity: .72; }
+  .it-h { padding: 12px; cursor: pointer; }
+  .badges { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 4px; }
+  .b { font-size: 11px; padding: 2px 8px; border-radius: 99px; background: var(--chip); border: 1px solid var(--line); }
+  .b.t { background: var(--acc); color: #fff; border-color: var(--acc); }
+  .b.n { background: #a86a12; color: #fff; border-color: #a86a12; }
+  .proc { font-family: ui-monospace, Menlo, Consolas, monospace; font-weight: 600; font-size: 14px; word-break: break-all; }
+  .meta { font-size: 12.5px; color: var(--mut); display: flex; gap: 12px; flex-wrap: wrap; margin-top: 3px; }
+  .it-b { border-top: 1px solid var(--line); padding: 12px; display: none; }
+  .item.open .it-b { display: block; }
+  .teor { white-space: pre-wrap; word-break: break-word; font-size: 14px; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px; max-height: 60vh; overflow: auto; }
+  h3 { font-size: 13px; margin: 10px 0 4px; color: var(--mut); }
+  a { color: var(--acc); }
+  .top-res { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; margin: 6px 0 10px; }
+  details summary { cursor: pointer; }
+</style>
+</head>
+<body>
+<header>
+  <h1>⚖️ Comunicações Processuais</h1>
+  <button id="b-dados" title="Guardar seus dados para não digitar toda vez">👤 Meus dados</button>
+</header>
+<main>
+  <div class="card">
+    <div class="grid g3">
+      <div><label for="f-nomeAdv">Nome do advogado</label><input id="f-nomeAdv" placeholder="Nome completo, como está na OAB" autocomplete="off"></div>
+      <div><label for="f-oab">Nº OAB</label><input id="f-oab" inputmode="numeric" placeholder="só números" autocomplete="off"></div>
+      <div><label for="f-uf">UF da OAB</label><select id="f-uf"></select></div>
+    </div>
+    <div class="grid g2" style="margin-top:10px">
+      <div><label for="f-proc">Número do processo</label><input id="f-proc" placeholder="0000000-00.0000.0.00.0000" autocomplete="off"></div>
+      <div><label for="f-parte">Nome da parte</label><input id="f-parte" placeholder="Nome da parte" autocomplete="off"></div>
+    </div>
+    <div style="margin-top:10px"><label>Período</label>
+      <div class="chips" id="periodos">
+        <button class="chip" data-d="0">Hoje</button><button class="chip on" data-d="7">7 dias</button><button class="chip" data-d="30">30 dias</button><button class="chip" data-d="90">90 dias</button><button class="chip" data-d="-1">Escolher datas</button>
+      </div>
+      <div class="grid g2" id="datas" style="margin-top:8px" hidden>
+        <div><label for="f-ini">De</label><input type="date" id="f-ini"></div>
+        <div><label for="f-fim">Até</label><input type="date" id="f-fim"></div>
+      </div>
+    </div>
+    <div class="row" style="margin-top:12px">
+      <button class="btn primary" id="b-buscar">🔍 Buscar</button>
+      <button class="btn" id="b-limpar">Limpar</button>
+      <span class="muted small">Consulta pública do CNJ (DJEN). Não precisa de senha nem chave.</span>
+    </div>
+  </div>
+
+  <div id="status"></div>
+  <div class="top-res" id="top-res" hidden>
+    <b id="total"></b>
+    <div class="row">
+      <input id="f-filtro" placeholder="Filtrar resultado…" style="width:auto;min-width:160px;padding:6px 9px;font-size:14px">
+      <button class="btn sm" id="b-txt">⤓ Baixar .txt</button>
+      <button class="btn sm" id="b-csv">⤓ Planilha (.csv)</button>
+    </div>
+  </div>
+  <div id="lista"></div>
+  <div class="row" style="justify-content:center"><button class="btn" id="b-mais" hidden>Carregar mais</button></div>
+</main>
+
+<script>
+(function () {
+  'use strict';
+  const API = 'https://comunicaapi.pje.jus.br/api/v1/comunicacao';
+  const UFS = ['', 'AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'];
+  const $ = (s) => document.querySelector(s);
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem('djen:' + k); return v == null ? d : JSON.parse(v); } catch { return d; } },
+    set(k, v) { try { localStorage.setItem('djen:' + k, JSON.stringify(v)); } catch {} },
+  };
+
+  $('#f-uf').innerHTML = UFS.map((u) => '<option value="' + u + '">' + (u || '—') + '</option>').join('');
+
+  // ── Meus dados (guardados só neste aparelho) ──────────────────────────────
+  function carregarDados() {
+    const d = store.get('dados', null);
+    if (!d) return;
+    $('#f-nomeAdv').value = d.nome || ''; $('#f-oab').value = d.oab || ''; $('#f-uf').value = d.uf || '';
+  }
+  $('#b-dados').onclick = () => {
+    const d = { nome: $('#f-nomeAdv').value.trim(), oab: $('#f-oab').value.replace(/\D/g, ''), uf: $('#f-uf').value };
+    if (!d.nome && !d.oab) { alert('Preencha seu nome e/ou OAB nos campos e toque em "Meus dados" de novo para guardar.'); return; }
+    store.set('dados', d);
+    status('✅ Seus dados foram guardados neste aparelho. Da próxima vez já aparecem preenchidos.', 'ok');
+  };
+  carregarDados();
+
+  // ── Período ───────────────────────────────────────────────────────────────
+  let dias = 7;
+  const iso = (d) => d.toISOString().slice(0, 10);
+  $('#periodos').onclick = (e) => {
+    const b = e.target.closest('[data-d]'); if (!b) return;
+    document.querySelectorAll('#periodos .chip').forEach((x) => x.classList.toggle('on', x === b));
+    dias = +b.dataset.d; $('#datas').hidden = dias !== -1;
+  };
+  function periodo() {
+    if (dias === -1) return { ini: $('#f-ini').value, fim: $('#f-fim').value };
+    const fim = new Date(), ini = new Date(); ini.setDate(ini.getDate() - dias);
+    return { ini: iso(ini), fim: iso(fim) };
+  }
+
+  // ── Texto da comunicação (vem em HTML) ────────────────────────────────────
+  function limpar(t) {
+    if (!t) return '';
+    const div = document.createElement('div');
+    let h = String(t).replace(/<(script|style)[^>]*>[\s\S]*?<\/\1>/gi, '')
+      .replace(/<br\s*\/?>/gi, '\n').replace(/<\/p>/gi, '\n\n').replace(/<\/(div|tr|li|h\d)>/gi, '\n').replace(/<\/td>/gi, ' | ');
+    div.innerHTML = h;
+    return (div.textContent || '').replace(/[ \t ]{2,}/g, ' ').replace(/\n[ \t]+/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+  }
+  const fData = (d) => { if (!d) return ''; const m = String(d).match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? m[3] + '/' + m[2] + '/' + m[1] : d; };
+
+  function parse(it) {
+    return {
+      id: it.id, hash: it.hash || '',
+      data: it.data_disponibilizacao || it.datadisponibilizacao || it.dataDisponibilizacao || '',
+      tribunal: it.siglaTribunal || it.tribunal || '',
+      tipo: it.tipoComunicacao || it.tipo || '',
+      orgao: it.nomeOrgao || it.orgao || '',
+      processo: it.numeroprocessocommascara || it.numero_processo || it.processo || '',
+      classe: it.nomeClasse || it.classe || '',
+      tipoDoc: it.tipoDocumento || '',
+      texto: limpar(it.texto || ''),
+      link: it.link || '', meio: it.meiocompleto || it.meio || '', status: it.status || '',
+      partes: (it.destinatarios || []).map((d) => ({ nome: d.nome || '', polo: d.polo === 'A' ? 'Ativo' : d.polo === 'P' ? 'Passivo' : (d.polo || '') })),
+      advs: (it.destinatarioadvogados || it.advogados || []).map((x) => { const a = x.advogado || x; return { nome: a.nome || '', oab: a.numero_oab || a.oab || '', uf: a.uf_oab || a.uf || '' }; }),
+    };
+  }
+
+  // ── Busca ─────────────────────────────────────────────────────────────────
+  let itens = [], total = 0, pagina = 1, ultimoParams = null;
+  const vistos = new Set(store.get('vistos', []));
+  const lidas = new Set(store.get('lidas', []));
+  const chave = (c) => c.hash || String(c.id);
+
+  function status(t, kind) { $('#status').innerHTML = t ? '<div class="msg ' + (kind || '') + '">' + t + '</div>' : ''; }
+
+  function montarParams(p) {
+    const q = new URLSearchParams();
+    const oab = $('#f-oab').value.replace(/\D/g, ''), uf = $('#f-uf').value;
+    const nomeAdv = $('#f-nomeAdv').value.trim(), parte = $('#f-parte').value.trim(), proc = $('#f-proc').value.replace(/[.\-\s]/g, '');
+    if (oab) q.set('numeroOab', oab);
+    if (uf && oab) q.set('ufOab', uf);
+    if (nomeAdv) q.set('nomeAdvogado', nomeAdv);
+    if (parte) q.set('nomeParte', parte);
+    if (proc) q.set('numeroProcesso', proc);
+    const per = periodo();
+    if (per.ini) q.set('dataDisponibilizacaoInicio', per.ini);
+    if (per.fim) q.set('dataDisponibilizacaoFim', per.fim);
+    q.set('pagina', String(p)); q.set('itensPorPagina', '100');
+    return q;
+  }
+
+  async function buscar(mais) {
+    const tem = $('#f-oab').value.trim() || $('#f-nomeAdv').value.trim() || $('#f-parte').value.trim() || $('#f-proc').value.trim();
+    if (!tem) { status('Preencha pelo menos um campo: nome do advogado, OAB, parte ou processo.', 'err'); return; }
+    if (!mais) { itens = []; pagina = 1; ultimoParams = montarParams(1); } else { pagina++; ultimoParams.set('pagina', String(pagina)); }
+    $('#b-buscar').disabled = true; $('#b-mais').disabled = true;
+    status('Consultando o CNJ…');
+    try {
+      const r = await fetch(API + '?' + ultimoParams.toString(), { headers: { Accept: 'application/json' } });
+      if (r.status === 429) throw new Error('O CNJ pediu para esperar um pouco (muitas consultas seguidas). Tente de novo em 1 minuto.');
+      if (!r.ok) throw new Error('O CNJ respondeu com erro ' + r.status + '.');
+      const d = await r.json();
+      const novos = (d.items || []).map(parse);
+      total = d.count || (itens.length + novos.length);
+      itens = itens.concat(novos);
+      status('');
+      render();
+      // marca como "vistas" para destacar as novas na próxima consulta
+      itens.forEach((c) => vistos.add(chave(c)));
+      store.set('vistos', [...vistos].slice(-5000));
+    } catch (e) {
+      if (mais) pagina--;
+      const rede = /Failed to fetch|NetworkError|Load failed/i.test(e.message);
+      status(rede
+        ? '⚠ Não consegui falar com o CNJ. Confira a internet. O CNJ também pode recusar acessos de fora do Brasil (VPN ligada?).'
+        : '⚠ ' + esc(e.message), 'err');
+    } finally { $('#b-buscar').disabled = false; $('#b-mais').disabled = false; }
+  }
+
+  function render() {
+    const f = ($('#f-filtro').value || '').toLowerCase();
+    const vis = itens.filter((c) => !f || (c.processo + ' ' + c.texto + ' ' + c.orgao + ' ' + c.partes.map((p) => p.nome).join(' ')).toLowerCase().includes(f));
+    $('#top-res').hidden = !itens.length && !total;
+    $('#total').textContent = total ? total + ' comunicação(ões)' + (itens.length < total ? ' · mostrando ' + itens.length : '') : 'Nenhuma comunicação encontrada no período';
+    $('#b-mais').hidden = !(itens.length < total);
+    $('#lista').innerHTML = vis.map((c, i) => {
+      const k = chave(c), nova = !vistos.has(k), lida = lidas.has(k);
+      return '<div class="item' + (nova ? ' nova' : '') + (lida ? ' lida' : '') + '" data-k="' + esc(k) + '">' +
+        '<div class="it-h"><div class="badges">' + (nova ? '<span class="b n">NOVA</span>' : '') + (c.tipo ? '<span class="b t">' + esc(c.tipo) + '</span>' : '') + (c.tribunal ? '<span class="b">' + esc(c.tribunal) + '</span>' : '') + ((c.tipoDoc || c.classe) ? '<span class="b">' + esc(c.tipoDoc || c.classe) + '</span>' : '') + (lida ? '<span class="b">✓ lida</span>' : '') + '</div>' +
+        '<div class="proc">' + esc(c.processo) + '</div>' +
+        '<div class="meta"><span>📅 ' + esc(fData(c.data)) + '</span>' + (c.orgao ? '<span>🏛 ' + esc(c.orgao) + '</span>' : '') + '</div>' +
+        (c.partes.length ? '<div class="small muted" style="margin-top:4px">' + esc(c.partes.map((p) => p.nome + (p.polo ? ' (' + p.polo + ')' : '')).join(' · ')) + '</div>' : '') +
+        '</div><div class="it-b">' +
+        (c.advs.length ? '<h3>Advogados</h3><div class="small">' + c.advs.map((a) => esc(a.nome) + (a.oab ? ' — OAB ' + esc(a.oab) + '/' + esc(a.uf) : '')).join('<br>') + '</div>' : '') +
+        (c.meio ? '<h3>Meio</h3><div class="small">' + esc(c.meio) + '</div>' : '') +
+        (c.texto ? '<h3>Teor da comunicação</h3><div class="teor">' + esc(c.texto) + '</div>' : '') +
+        '<div class="row" style="margin-top:10px">' +
+          '<button class="btn sm" data-a="copiar">📋 Copiar teor</button>' +
+          '<button class="btn sm" data-a="lida">' + (lida ? '↺ Marcar não lida' : '✓ Marcar como lida') + '</button>' +
+          (c.link ? '<a class="btn sm" href="' + esc(c.link) + '" target="_blank" rel="noopener">↗ Ver no tribunal</a>' : '') +
+          (c.hash ? '<a class="btn sm" href="https://comunicaapi.pje.jus.br/api/v1/comunicacao/' + encodeURIComponent(c.hash) + '/certidao" target="_blank" rel="noopener">⤓ Certidão (PDF)</a>' : '') +
+        '</div></div></div>';
+    }).join('') || (itens.length ? '<p class="muted">Nada com esse filtro.</p>' : '');
+  }
+
+  $('#lista').addEventListener('click', async (e) => {
+    const item = e.target.closest('.item'); if (!item) return;
+    const k = item.dataset.k, c = itens.find((x) => chave(x) === k);
+    const a = e.target.closest('[data-a]');
+    if (!a) { if (e.target.closest('.it-h')) item.classList.toggle('open'); return; }
+    if (a.dataset.a === 'copiar' && c) {
+      const t = c.processo + '\n' + fData(c.data) + ' — ' + c.orgao + '\n\n' + c.texto;
+      try { await navigator.clipboard.writeText(t); a.textContent = '✓ Copiado'; } catch { prompt('Copie o texto:', t); }
+    }
+    if (a.dataset.a === 'lida') { lidas.has(k) ? lidas.delete(k) : lidas.add(k); store.set('lidas', [...lidas].slice(-5000)); const open = item.classList.contains('open'); render(); if (open) { const n = document.querySelector('.item[data-k="' + CSS.escape(k) + '"]'); if (n) n.classList.add('open'); } }
+  });
+
+  // ── Baixar ────────────────────────────────────────────────────────────────
+  function baixar(nome, texto, tipo) {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([texto], { type: tipo + ';charset=utf-8' }));
+    a.download = nome; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  }
+  $('#b-txt').onclick = () => baixar('comunicacoes-' + iso(new Date()) + '.txt', itens.map((c) => '═'.repeat(40) + '\n' + c.processo + ' · ' + fData(c.data) + ' · ' + c.tribunal + '\n' + c.orgao + '\nPartes: ' + c.partes.map((p) => p.nome + ' (' + p.polo + ')').join('; ') + '\n\n' + c.texto + '\n').join('\n'), 'text/plain');
+  $('#b-csv').onclick = () => {
+    const q = (v) => '"' + String(v || '').replace(/"/g, '""') + '"';
+    const linhas = [['Data', 'Tribunal', 'Tipo', 'Processo', 'Órgão', 'Partes', 'Link'].map(q).join(';')]
+      .concat(itens.map((c) => [fData(c.data), c.tribunal, c.tipo, c.processo, c.orgao, c.partes.map((p) => p.nome).join(' / '), c.link].map(q).join(';')));
+    baixar('comunicacoes-' + iso(new Date()) + '.csv', '﻿' + linhas.join('\r\n'), 'text/csv');
+  };
+
+  $('#b-buscar').onclick = () => buscar(false);
+  $('#b-mais').onclick = () => buscar(true);
+  $('#f-filtro').oninput = render;
+  $('#b-limpar').onclick = () => { ['#f-proc', '#f-parte'].forEach((s) => ($(s).value = '')); itens = []; total = 0; status(''); render(); $('#top-res').hidden = true; };
+  document.querySelectorAll('main input').forEach((i) => i.addEventListener('keydown', (e) => { if (e.key === 'Enter' && i.id !== 'f-filtro') buscar(false); }));
+})();
+</script>
+</body>
+</html>

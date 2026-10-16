@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Assistente Jurídico</title>
+<link rel="stylesheet" href="css/app.css">
+  <!-- PWA:inicio (gerado pelo Mini SK — pode refazer no painel 📱 PWA) -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0f172a">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="assistente-j">
+  <link rel="icon" href="favicon.ico" sizes="any">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <script>
+    if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
+      addEventListener('load', function () { navigator.serviceWorker.register('service-worker.js').catch(function (e) { console.warn('Service worker:', e); }); });
+    }
+  </script>
+  <!-- PWA:fim -->
+</head>
+<body>
+  <header class="topo">
+    <div class="marca">⚖️ <b>Assistente Jurídico</b> <span class="versao" id="versao"></span></div>
+    <button class="chave-status" id="chave-status" data-ir="config" title="Chave da IA">🔑 sem chave</button>
+  </header>
+
+  <nav class="abas" id="abas" aria-label="Partes do app">
+    <button data-aba="processar" class="ativa">⚡ Processar</button>
+    <button data-aba="editor">✏️ Editor</button>
+    <button data-aba="conversa">💬 Conversa</button>
+    <button data-aba="documentos">📁 Documentos</button>
+    <button data-aba="biblioteca">📚 Modelos e ementas</button>
+    <button data-aba="regras">📜 Regras e memória</button>
+    <button data-aba="ferramentas">🧰 Ferramentas</button>
+    <button data-aba="config">⚙️ Config</button>
+  </nav>
+
+  <main>
+    <section class="painel ativo" id="painel-processar"></section>
+    <section class="painel" id="painel-editor"></section>
+    <section class="painel" id="painel-conversa"></section>
+    <section class="painel" id="painel-documentos"></section>
+    <section class="painel" id="painel-biblioteca"></section>
+    <section class="painel" id="painel-regras"></section>
+    <section class="painel" id="painel-ferramentas"></section>
+    <section class="painel" id="painel-config"></section>
+  </main>
+
+  <div id="avisos" class="avisos" aria-live="polite"></div>
+
+  <!-- Os módulos, NA ORDEM: 00 primeiro (o "caixa comum"), 99 por último (liga tudo). -->
+  <script src="lib/jszip.min.js"></script>
+  <script src="js/00-core.js"></script>
+  <script src="js/10-ia.js"></script>
+  <script src="js/12-voz.js"></script>
+  <script src="js/15-importar.js"></script>
+  <script src="js/18-texto.js"></script>
+  <script src="js/25-regras.js"></script>
+  <script src="js/20-processar.js"></script>
+  <script src="js/30-editor.js"></script>
+  <script src="js/35-docx.js"></script>
+  <script src="js/40-conversa.js"></script>
+  <script src="js/50-documentos.js"></script>
+  <script src="js/55-biblioteca.js"></script>
+  <script src="js/70-ferramentas.js"></script>
+  <script src="js/80-config.js"></script>
+  <script src="js/99-app.js"></script>
+</body>
+</html>

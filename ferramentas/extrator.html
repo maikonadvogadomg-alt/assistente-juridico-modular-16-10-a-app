@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1b2337">
+<title>Extrator de Sites</title>
+<style>
+  :root { --bg:#0f1420; --bg2:#151b2b; --bg3:#1b2337; --line:#263048; --line2:#34405e; --tx:#d8deea; --mut:#8592ab; --acc:#4f8cff; --ok:#38c793; --bad:#ff6b78; --mono:ui-monospace,"Cascadia Code",Consolas,Menlo,monospace; }
+  @media (prefers-color-scheme: light) { :root { --bg:#f4f6fb; --bg2:#fff; --bg3:#eef1f8; --line:#d9deea; --line2:#c5ccdc; --tx:#1d2433; --mut:#5d6780; } }
+  * { box-sizing: border-box; } [hidden] { display: none !important; }
+  body { margin: 0; background: var(--bg); color: var(--tx); font: 15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; }
+  header { position: sticky; top: 0; z-index: 5; background: var(--bg2); border-bottom: 1px solid var(--line); padding: 10px 14px; padding-top: max(10px, env(safe-area-inset-top)); }
+  h1 { font-size: 17px; margin: 0 0 8px; }
+  main { max-width: 960px; margin: 0 auto; padding: 12px 14px 60px; }
+  .row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  .inp { font: inherit; font-size: 16px; padding: 9px 10px; border-radius: 9px; border: 1px solid var(--line2); background: var(--bg); color: var(--tx); }
+  .btn { font: inherit; font-size: 14px; padding: 8px 12px; border-radius: 9px; border: 1px solid var(--line2); background: var(--bg3); color: var(--tx); cursor: pointer; white-space: nowrap; }
+  .btn.p { background: var(--acc); border-color: var(--acc); color: #fff; font-weight: 600; }
+  .btn.s { padding: 4px 9px; font-size: 13px; }
+  .btn:disabled { opacity: .55; }
+  .muted { color: var(--mut); } .small { font-size: 12.5px; }
+  .msg { padding: 9px 12px; border-radius: 9px; font-size: 14px; margin: 8px 0; white-space: pre-wrap; }
+  .msg.err { background: #ff6b781f; color: var(--bad); } .msg.ok { background: #38c7931f; color: var(--ok); }
+  .tabs { display: flex; gap: 4px; flex-wrap: wrap; margin: 10px 0 6px; }
+  .tab { font: inherit; font-size: 13px; padding: 6px 11px; border-radius: 99px; border: 1px solid var(--line2); background: var(--bg3); color: var(--tx); cursor: pointer; }
+  .tab.on { background: var(--acc); border-color: var(--acc); color: #fff; }
+  pre { margin: 0; white-space: pre-wrap; word-break: break-word; font: 12.5px/1.5 var(--mono); background: var(--bg2); border: 1px solid var(--line); border-radius: 10px; padding: 10px; max-height: 75vh; overflow: auto; }
+  .lst div { display: flex; gap: 6px; align-items: center; padding: 6px 8px; border-bottom: 1px solid var(--line); font-size: 13px; }
+  .lst div span { flex: 1; min-width: 0; word-break: break-all; font-family: var(--mono); }
+  .lst a { color: #8fb8ff; }
+  mark { background: #f2b84b66; color: inherit; }
+  .hist { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px; }
+  .hist button { font-size: 11.5px; padding: 3px 8px; border-radius: 99px; border: 1px solid var(--line2); background: var(--bg3); color: var(--mut); cursor: pointer; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+</style>
+</head>
+<body>
+<header>
+  <h1>🛠️ Extrator de Sites</h1>
+  <div class="row">
+    <input class="inp" id="url" type="url" placeholder="https://site.com/pagina" style="flex:1;min-width:180px" autocomplete="off" autocapitalize="off">
+    <button class="btn p" id="go">⤓ Extrair</button>
+  </div>
+  <div class="hist" id="hist"></div>
+</header>
+<main>
+  <p class="muted small" id="ajuda">Cole o endereço de uma página pública e toque em <b>Extrair</b>. Vem o código <b>inteiro</b> (nada cortado), o texto, os links e os arquivos que a página usa (CSS, JS, imagens). Dá para copiar, procurar e baixar tudo em .zip.</p>
+  <div id="status"></div>
+  <div id="res" hidden>
+    <div class="row small muted" id="info"></div>
+    <div class="tabs" id="tabs">
+      <button class="tab on" data-t="codigo">📄 Código</button>
+      <button class="tab" data-t="texto">📝 Texto</button>
+      <button class="tab" data-t="links">🔗 Links</button>
+      <button class="tab" data-t="rec">🧩 Arquivos da página</button>
+    </div>
+    <div class="row" style="margin-bottom:6px">
+      <input class="inp" id="q" placeholder="🔍 Procurar…" style="flex:1;min-width:140px;padding:6px 9px;font-size:14px">
+      <button class="btn s" id="copiar">📋 Copiar esta aba</button>
+      <button class="btn s" id="baixar">⤓ Baixar esta aba</button>
+      <button class="btn s" id="zip">📦 Baixar tudo (.zip)</button>
+    </div>
+    <div id="view"></div>
+  </div>
+  <details style="margin-top:18px"><summary class="small muted">Como funciona (e por que às vezes não extrai)</summary>
+    <div class="small muted" style="margin-top:6px">
+      <p>O navegador, por segurança, não deixa uma página ler outro site (é a trava chamada <b>CORS</b>). Por isso o extrator tenta em <b>cascata</b>:</p>
+      <ol>
+        <li><b>Direto</b>: funciona com sites que liberam (vários do governo liberam).</li>
+        <li>Passando por <b>"pontes" públicas gratuitas</b> que buscam a página por você, uma depois da outra até alguma dar certo.</li>
+        <li>Por último, um leitor que devolve só o <b>texto</b> da página.</li>
+      </ol>
+      <p>No APK, a trava do CORS não existe do mesmo jeito; por isso alguns extratores funcionam no APK e não no navegador.</p>
+      <p>⚠ Use só com páginas <b>públicas</b>: as pontes são de terceiros e veem o que passa por elas. Páginas com login, senha ou dados de clientes não devem passar por aqui. Sites com proteção forte (Cloudflare, Netlify com bloqueio) podem recusar todas as pontes. Copiar o código de um sistema pago pode ir contra os termos de uso dele: use para estudar e se inspirar.</p>
+    </div>
+  </details>
+</main>
+<script>
+(function () {
+  'use strict';
+  const $ = (s) => document.querySelector(s);
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  // Rotas em cascata: a primeira que responder com conteúdo vence.
+  const ROTAS = [
+    { nome: 'direto', url: (u) => u },
+    { nome: 'ponte allorigins', url: (u) => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u) },
+    { nome: 'ponte allorigins (json)', url: (u) => 'https://api.allorigins.win/get?url=' + encodeURIComponent(u), json: 'contents' },
+    { nome: 'ponte corsproxy', url: (u) => 'https://corsproxy.io/?url=' + encodeURIComponent(u) },
+    { nome: 'ponte codetabs', url: (u) => 'https://api.codetabs.com/v1/proxy/?quest=' + encodeURIComponent(u) },
+    { nome: 'ponte cors.lol', url: (u) => 'https://api.cors.lol/?url=' + encodeURIComponent(u) },
+  ];
+  const LEITOR = (u) => 'https://r.jina.ai/' + u;
+
+  let atual = null, aba = 'codigo';
+  const hist = (() => { try { return JSON.parse(localStorage.getItem('extrator:hist') || '[]'); } catch { return []; } })();
+  function salvarHist(u) { const i = hist.indexOf(u); if (i >= 0) hist.splice(i, 1); hist.unshift(u); hist.length = Math.min(hist.length, 12); try { localStorage.setItem('extrator:hist', JSON.stringify(hist)); } catch {} renderHist(); }
+  function renderHist() { $('#hist').innerHTML = hist.map((u) => '<button data-u="' + esc(u) + '" title="' + esc(u) + '">' + esc(u.replace(/^https?:\/\//, '')) + '</button>').join(''); }
+  $('#hist').onclick = (e) => { const b = e.target.closest('[data-u]'); if (b) { $('#url').value = b.dataset.u; extrair(); } };
+  renderHist();
+
+  function status(t, k) { $('#status').innerHTML = t ? '<div class="msg ' + (k || '') + '">' + t + '</div>' : ''; }
+
+  async function buscar(u, binario, tempo) {
+    const erros = [];
+    for (const r of ROTAS) {
+      try {
+        const ctl = new AbortController(); const tm = setTimeout(() => ctl.abort(), tempo || 20000);
+        const res = await fetch(r.url(u), { signal: ctl.signal, redirect: 'follow' });
+        clearTimeout(tm);
+        if (!res.ok) { erros.push(r.nome + ': erro ' + res.status); continue; }
+        if (binario && r.json) continue;
+        if (binario) { const b = new Uint8Array(await res.arrayBuffer()); if (b.length) return { rota: r.nome, bytes: b, tipo: res.headers.get('content-type') || '' }; erros.push(r.nome + ': vazio'); continue; }
+        let t = await res.text();
+        if (r.json) { try { t = JSON.parse(t)[r.json] || ''; } catch { t = ''; } }
+        if (t && t.trim()) return { rota: r.nome, texto: t, tipo: res.headers.get('content-type') || '' };
+        erros.push(r.nome + ': vazio');
+      } catch (e) { erros.push(r.nome + ': ' + (e.name === 'AbortError' ? 'demorou demais' : 'bloqueado')); }
+    }
+    const err = new Error(erros.join('\n')); err.lista = erros; throw err;
+  }
+
+  function absoluto(base, href) { try { return new URL(href, base).href; } catch { return null; } }
+  function analisar(html, base) {
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    const links = new Map(), rec = new Map();
+    doc.querySelectorAll('a[href]').forEach((a) => { const u = absoluto(base, a.getAttribute('href')); if (u && /^https?:/.test(u)) links.set(u, (a.textContent || '').trim().replace(/\s+/g, ' ')); });
+    const addRec = (u, tipo) => { u = absoluto(base, u); if (u && /^https?:/.test(u) && !rec.has(u)) rec.set(u, tipo); };
+    doc.querySelectorAll('link[rel~="stylesheet"][href]').forEach((l) => addRec(l.getAttribute('href'), 'css'));
+    doc.querySelectorAll('script[src]').forEach((s) => addRec(s.getAttribute('src'), 'js'));
+    doc.querySelectorAll('link[rel~="manifest"][href]').forEach((l) => addRec(l.getAttribute('href'), 'manifest'));
+    doc.querySelectorAll('link[rel~="icon"][href], link[rel~="apple-touch-icon"][href]').forEach((l) => addRec(l.getAttribute('href'), 'ícone'));
+    doc.querySelectorAll('img[src]').forEach((i) => addRec(i.getAttribute('src'), 'imagem'));
+    doc.querySelectorAll('source[src], video[src], audio[src]').forEach((i) => addRec(i.getAttribute('src'), 'mídia'));
+    const sw = html.match(/serviceWorker\.register\(\s*['"`]([^'"`]+)['"`]/); if (sw) addRec(sw[1], 'service worker');
+    doc.querySelectorAll('script, style, noscript, template').forEach((n) => n.remove());
+    doc.querySelectorAll('br').forEach((n) => n.replaceWith('\n'));
+    doc.querySelectorAll('p,div,h1,h2,h3,h4,h5,h6,li,tr,section,article,header,footer,nav,main,aside,blockquote,pre,table,ul,ol,dt,dd,figcaption').forEach((n) => { n.append('\n'); });
+    doc.querySelectorAll('td,th').forEach((n) => n.append(' | '));
+    const texto = (doc.body ? doc.body.textContent : doc.documentElement.textContent || '').replace(/[ \t]+\n/g, '\n').replace(/\n[ \t]+/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+    const titulo = (new DOMParser().parseFromString(html, 'text/html').title || '').trim();
+    return { links: [...links].map(([u, t]) => ({ u, t })), rec: [...rec].map(([u, tipo]) => ({ u, tipo })), texto, titulo };
+  }
+
+  async function extrair() {
+    let u = $('#url').value.trim();
+    if (!u) return status('Cole um endereço primeiro.', 'err');
+    if (!/^https?:\/\//i.test(u)) u = 'https://' + u;
+    $('#url').value = u; $('#go').disabled = true; $('#res').hidden = true;
+    status('Buscando… (tento direto e depois pelas pontes, uma por uma)');
+    try {
+      const r = await buscar(u);
+      const a = analisar(r.texto, u);
+      atual = { url: u, html: r.texto, rota: r.rota, ...a };
+      salvarHist(u);
+      status('✅ Extraído pela rota: <b>' + esc(r.rota) + '</b>', 'ok');
+      mostrar();
+    } catch (e) {
+      // Último recurso: só o texto da página
+      try {
+        const res = await fetch(LEITOR(u));
+        if (!res.ok) throw new Error('leitor: erro ' + res.status);
+        const t = await res.text();
+        atual = { url: u, html: '', rota: 'leitor de texto', links: [], rec: [], texto: t, titulo: '' };
+        salvarHist(u);
+        status('⚠ O código não veio (o site bloqueia), mas consegui o <b>texto</b> da página pelo leitor.', 'ok');
+        aba = 'texto'; mostrar();
+      } catch (e2) {
+        status('❌ Não consegui extrair. Tentativas:\n' + esc((e.lista || [e.message]).concat(['leitor de texto: ' + e2.message]).join('\n')) + '\n\nO site pode ter proteção forte, exigir login, ou estar fora do ar.', 'err');
+      }
+    } finally { $('#go').disabled = false; }
+  }
+
+  function realce(t, q) {
+    if (!q) return esc(t);
+    const lo = t.toLowerCase(), ql = q.toLowerCase(); let o = '', i = 0, j;
+    while ((j = lo.indexOf(ql, i)) >= 0) { o += esc(t.slice(i, j)) + '<mark>' + esc(t.slice(j, j + q.length)) + '</mark>'; i = j + q.length; }
+    return o + esc(t.slice(i));
+  }
+  function conteudoAba() {
+    if (!atual) return '';
+    if (aba === 'codigo') return atual.html;
+    if (aba === 'texto') return atual.texto;
+    if (aba === 'links') return atual.links.map((l) => l.u + (l.t ? '  — ' + l.t : '')).join('\n');
+    return atual.rec.map((r) => '[' + r.tipo + '] ' + r.u).join('\n');
+  }
+  function mostrar() {
+    $('#res').hidden = false;
+    document.querySelectorAll('.tab').forEach((t) => t.classList.toggle('on', t.dataset.t === aba));
+    const q = $('#q').value.trim();
+    $('#info').innerHTML = (atual.titulo ? '<b>' + esc(atual.titulo) + '</b> · ' : '') + (atual.html ? (atual.html.length / 1024).toFixed(1).replace('.', ',') + ' KB de código · ' + atual.html.split('\n').length.toLocaleString('pt-BR') + ' linhas · ' : '') + atual.links.length + ' links · ' + atual.rec.length + ' arquivos';
+    if (aba === 'codigo' || aba === 'texto') {
+      const t = conteudoAba();
+      $('#view').innerHTML = t ? '<pre>' + realce(t, q) + '</pre>' : '<p class="muted">Nada nesta aba.</p>';
+      return;
+    }
+    const lista = aba === 'links' ? atual.links.map((l) => ({ u: l.u, d: l.t })) : atual.rec.map((r) => ({ u: r.u, d: r.tipo }));
+    const vis = lista.filter((x) => !q || (x.u + ' ' + x.d).toLowerCase().includes(q.toLowerCase()));
+    $('#view').innerHTML = vis.length ? '<div class="lst">' + vis.map((x) => '<div><span>' + realce(x.u, q) + (x.d ? '<br><small class="muted">' + realce(x.d, q) + '</small>' : '') + '</span>' +
+      (aba === 'links' ? '<button class="btn s" data-ext="' + esc(x.u) + '">⤓ Extrair</button>' : '<button class="btn s" data-ver="' + esc(x.u) + '">👁 Ver</button>') + '<a class="btn s" href="' + esc(x.u) + '" target="_blank" rel="noopener">↗</a></div>').join('') + '</div>' : '<p class="muted">Nada aqui.</p>';
+  }
+  $('#tabs').onclick = (e) => { const t = e.target.closest('[data-t]'); if (t) { aba = t.dataset.t; mostrar(); } };
+  $('#q').oninput = mostrar;
+  $('#view').addEventListener('click', async (e) => {
+    const x = e.target.closest('[data-ext]'); if (x) { $('#url').value = x.dataset.ext; window.scrollTo(0, 0); extrair(); return; }
+    const v = e.target.closest('[data-ver]');
+    if (v) {
+      v.disabled = true; v.textContent = '…';
+      try {
+        const r = await buscar(v.dataset.ver);
+        const box = document.createElement('pre'); box.style.marginTop = '6px'; box.textContent = r.texto;
+        v.closest('div').after(box); v.textContent = '✓';
+      } catch { v.textContent = '✗'; }
+    }
+  });
+  $('#go').onclick = extrair;
+  $('#url').addEventListener('keydown', (e) => { if (e.key === 'Enter') extrair(); });
+
+  async function copiar(t) {
+    try { await navigator.clipboard.writeText(t); status('📋 Copiado (' + t.length.toLocaleString('pt-BR') + ' caracteres)', 'ok'); }
+    catch { const ta = document.createElement('textarea'); ta.value = t; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); status('📋 Copiado', 'ok'); }
+  }
+  function baixar(nome, blob) { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = nome; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 3000); }
+  const nomeBase = () => { try { const u = new URL(atual.url); return (u.hostname + u.pathname).replace(/[^\w.-]+/g, '-').replace(/-+$/, '') || 'pagina'; } catch { return 'pagina'; } };
+  $('#copiar').onclick = () => copiar(conteudoAba());
+  $('#baixar').onclick = () => baixar(nomeBase() + (aba === 'codigo' ? '.html' : '-' + aba + '.txt'), new Blob([conteudoAba()], { type: 'text/plain;charset=utf-8' }));
+
+  // ── .zip com a página e os arquivos dela ──────────────────────────────────
+  const CRC = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+  const crc32 = (u8) => { let c = 0xffffffff; for (let i = 0; i < u8.length; i++) c = CRC[(c ^ u8[i]) & 0xff] ^ (c >>> 8); return (c ^ 0xffffffff) >>> 0; };
+  function zip(files) {
+    const enc = new TextEncoder(), parts = [], cen = []; let off = 0;
+    for (const f of files) {
+      const nm = enc.encode(f.name), d = f.data, crc = crc32(d);
+      const h = new DataView(new ArrayBuffer(30)); h.setUint32(0, 0x04034b50, true); h.setUint16(4, 20, true); h.setUint16(6, 0x800, true); h.setUint32(14, crc, true); h.setUint32(18, d.length, true); h.setUint32(22, d.length, true); h.setUint16(26, nm.length, true);
+      parts.push(new Uint8Array(h.buffer), nm, d);
+      const c = new DataView(new ArrayBuffer(46)); c.setUint32(0, 0x02014b50, true); c.setUint16(4, 20, true); c.setUint16(6, 20, true); c.setUint16(8, 0x800, true); c.setUint32(16, crc, true); c.setUint32(20, d.length, true); c.setUint32(24, d.length, true); c.setUint16(28, nm.length, true); c.setUint32(42, off, true);
+      cen.push(new Uint8Array(c.buffer), nm); off += 30 + nm.length + d.length;
+    }
+    const cs = cen.reduce((a, b) => a + b.length, 0), e = new DataView(new ArrayBuffer(22));
+    e.setUint32(0, 0x06054b50, true); e.setUint16(8, files.length, true); e.setUint16(10, files.length, true); e.setUint32(12, cs, true); e.setUint32(16, off, true);
+    return new Blob(parts.concat(cen, [new Uint8Array(e.buffer)]), { type: 'application/zip' });
+  }
+  $('#zip').onclick = async () => {
+    if (!atual) return;
+    const enc = new TextEncoder(), files = [], usados = new Set(), falhas = [];
+    const caminho = (u) => { try { const x = new URL(u); let p = (x.hostname === new URL(atual.url).hostname ? '' : x.hostname + '/') + x.pathname.replace(/^\/+/, ''); if (!p || p.endsWith('/')) p += 'index'; p = p.replace(/[?*:|"<>]/g, '_'); let q = p, i = 2; while (usados.has(q)) q = p.replace(/(\.[^./]+)?$/, '-' + i++ + '$1'); usados.add(q); return 'arquivos/' + q; } catch { return 'arquivos/item-' + usados.size; } };
+    if (atual.html) files.push({ name: 'pagina.html', data: enc.encode(atual.html) });
+    files.push({ name: 'texto.txt', data: enc.encode(atual.texto || '') });
+    files.push({ name: 'links.txt', data: enc.encode(atual.links.map((l) => l.u + (l.t ? '  — ' + l.t : '')).join('\n')) });
+    let n = 0;
+    for (const r of atual.rec) {
+      n++; status('📦 Baixando arquivos da página: ' + n + ' de ' + atual.rec.length + '…');
+      try { const b = await buscar(r.u, true, 15000); files.push({ name: caminho(r.u), data: b.bytes }); }
+      catch { falhas.push(r.u); }
+    }
+    files.push({ name: 'LEIA-ME.txt', data: enc.encode('Extraído de: ' + atual.url + '\nEm: ' + new Date().toLocaleString('pt-BR') + '\nRota: ' + atual.rota + '\n\npagina.html = código da página\ntexto.txt = só o texto\nlinks.txt = todos os links\narquivos/ = CSS, JS, imagens que a página usa\n' + (falhas.length ? '\nNão consegui baixar (' + falhas.length + '):\n' + falhas.join('\n') + '\n' : '')) });
+    const blob = zip(files);
+    baixar(nomeBase() + '.zip', blob);
+    status('📦 Pronto: ' + files.length + ' arquivo(s) no .zip' + (falhas.length ? ' · ' + falhas.length + ' não vieram (veja LEIA-ME.txt)' : ''), 'ok');
+  };
+})();
+</script>
+</body>
+</html>
